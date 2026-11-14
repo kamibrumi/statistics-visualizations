@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Standard Error</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --ink: #1c1917;
+    --muted: #78716c;
+    --grid: #e7e5e4;
+    --bar: #6366f1;
+    --bar-hover: #4338ca;
+    --mean: #e11d48;
+    --sd: #f59e0b;
+    --xbar: #0d9488;
+    --card: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0c0a09; --ink: #f5f5f4; --muted: #a8a29e; --grid: #292524;
+      --bar: #818cf8; --bar-hover: #a5b4fc; --mean: #fb7185; --sd: #fbbf24;
+      --xbar: #2dd4bf; --card: #1c1917;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  main {
+    flex: 1; width: min(900px, 100%); text-align: center;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  h1 { font-size: 1.25rem; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 12px; }
+  svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+  /* ---------- Controls ---------- */
+  .controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .stepper { display: inline-flex; align-items: center; gap: 2px; font-size: 0.85rem; }
+  .stepper-label { color: var(--muted); margin-right: 4px; }
+  .stepper input {
+    font: inherit; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink);
+    width: 4ch; text-align: center; padding: 2px 0;
+    background: transparent; border: 0; border-bottom: 1px dashed transparent; border-radius: 0;
+  }
+  .stepper input:hover { border-bottom-color: var(--muted); }
+  .stepper input:focus { outline: none; border-bottom: 1px solid var(--bar); }
+  .stepper button, .icon-btn {
+    font: inherit; font-size: 1rem; line-height: 1; color: var(--muted);
+    width: 24px; height: 24px; border: 0; border-radius: 50%;
+    background: transparent; cursor: pointer; user-select: none;
+  }
+  .stepper button:hover, .icon-btn:hover { background: var(--grid); color: var(--ink); }
+  .stepper button:disabled { opacity: .3; cursor: default; background: transparent; }
+  .xbar { text-decoration: overline; text-decoration-thickness: from-font; }
+  .switch {
+    font: inherit; font-size: 0.85rem; color: var(--muted); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 2px; border: 0; background: transparent; border-radius: 999px;
+  }
+  .switch:hover { color: var(--ink); }
+  .track {
+    position: relative; width: 34px; height: 20px; border-radius: 999px;
+    border: 1.5px solid var(--muted); background: transparent;
+    transition: background .2s, border-color .2s;
+  }
+  .knob {
+    position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%;
+    background: var(--muted);
+    transition: transform .2s cubic-bezier(.4, 0, .2, 1), background .2s;
+  }
+  .switch[aria-checked="true"] { color: var(--ink); }
+  .switch[aria-checked="true"] .track { background: var(--xbar); border-color: var(--xbar); }
+  .switch[aria-checked="true"] .knob { transform: translateX(14px); background: var(--card); }
+  button:focus-visible { outline: 2px solid var(--bar); outline-offset: 1px; }
+
+  /* ---------- Main chart ---------- */
+  .bar { fill: var(--bar); transition: fill .15s; }
+  .bar:hover, .bar.hl { fill: var(--bar-hover); }
+  .axis line { stroke: var(--muted); }
+  .axis text { fill: var(--muted); font-size: 12px; }
+  .gridline { stroke: var(--grid); }
+  .label { fill: var(--ink); font-size: 13px; }
+  .mean-line { stroke: var(--mean); stroke-width: 2; stroke-dasharray: 6 4; }
+  .mean-text { fill: var(--mean); font-size: 13px; font-weight: 600; }
+  .sd-line { stroke: var(--sd); stroke-width: 2; }
+  .sd-text { fill: var(--sd); font-size: 13px; font-weight: 600; }
+
+  /* ---------- Samples strip ---------- */
+  .samples { width: 100%; margin-top: 72px; }
+  .samples-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 4px 0 0; padding: 0 2px;
+  }
+  .samples-head h2 { font-size: 1rem; font-weight: 600; margin: 0; }
+  .samples-head { align-items: center; flex-wrap: wrap; gap: 8px; }
+  .strip {
+    --visible: 7; --gap: 12px;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - (var(--visible) - 1) * var(--gap)) / var(--visible));
+    gap: var(--gap);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+  }
+  @media (max-width: 700px) { .strip { --visible: 3; } }
+  .card {
+    scroll-snap-align: start;
+    border: 1px solid var(--grid);
+    border-radius: 8px;
+    padding: 8px 8px 4px;
+    background: var(--card);
+    transition: border-color .15s;
+  }
+  .card.hl { border-color: var(--xbar); }
+  .card-title { font-size: 12px; font-weight: 600; margin: 0; text-align: left; }
+  .card-meta { font-size: 11px; color: var(--muted); margin: 0 0 4px; text-align: left; }
+  .card svg .bar { fill: var(--bar); opacity: .8; }
+  .card svg .xbar-line { stroke: var(--xbar); stroke-width: 2; }
+  .card svg .mu-line { stroke: var(--mean); stroke-width: 1; stroke-dasharray: 3 3; opacity: .7; }
+
+  /* ---------- Connector curves ---------- */
+  #links {
+    position: fixed; inset: 0; width: 100vw; height: 100vh;
+    pointer-events: none; overflow: visible;
+  }
+  #links path {
+    fill: none; stroke: var(--xbar); stroke-width: 1.5; opacity: .45;
+    transition: opacity .15s, stroke-width .15s;
+  }
+  #links g.hl path { opacity: 1; stroke-width: 3; }
+  #links circle { fill: var(--xbar); }
+  #links .pill rect { fill: var(--card); stroke: var(--xbar); stroke-width: 1; }
+  #links .pill text { fill: var(--xbar); font-size: 11px; font-weight: 600; }
+  #links g.hl .pill rect { fill: var(--xbar); }
+  #links g.hl .pill text { fill: var(--card); }
+  .tooltip {
+    position: fixed; pointer-events: none; background: var(--ink); color: var(--bg);
+    font-size: 12px; padding: 4px 8px; border-radius: 4px; opacity: 0; transition: opacity .1s;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sampling distribution of the sample mean</h1>
+  <p class="sub" id="sub"></p>
+  <svg id="chart" viewBox="0 0 900 420" role="img" aria-label="Histogram of the sample means"></svg>
+</main>
+<section class="samples">
+  <div class="strip" id="strip"></div>
+  <div class="samples-head">
+    <h2>Samples from the population</h2>
+    <div class="controls">
+      <div class="stepper" id="step-k" role="group" aria-label="Number of samples">
+        <span class="stepper-label">samples</span>
+        <button type="button" data-d="-1" aria-label="Fewer samples">−</button>
+        <input type="text" inputmode="numeric" aria-label="Number of samples">
+        <button type="button" data-d="1" aria-label="More samples">+</button>
+      </div>
+      <div class="stepper" id="step-n" role="group" aria-label="Sample size n">
+        <span class="stepper-label">n</span>
+        <button type="button" data-d="-1" aria-label="Smaller samples">−</button>
+        <input type="text" inputmode="numeric" aria-label="Sample size n">
+        <button type="button" data-d="1" aria-label="Larger samples">+</button>
+      </div>
+      <button type="button" class="switch" id="sort" role="switch" aria-checked="false" title="Order the cards by their mean">
+        <span class="switch-label">sort by <span class="xbar">x</span></span>
+        <span class="track"><span class="knob"></span></span>
+      </button>
+      <button type="button" class="icon-btn" id="resample" title="New samples" aria-label="New samples">↻</button>
+    </div>
+  </div>
+</section>
+<svg id="links" aria-hidden="true"></svg>
+<div class="tooltip" id="tip"></div>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  parent.appendChild(e);
+  return e;
+}
+
+// Write text into an HTML or SVG element, drawing every "x̄" as an x with a real
+// overline. (The combining-macron character "x̄" is placed off-centre by most fonts.)
+function setXbar(node, str) {
+  node.textContent = "";
+  const isSvg = node instanceof SVGElement;
+  str.split("x̄").forEach((part, i) => {
+    if (i > 0) {
+      const x = isSvg ? document.createElementNS(NS, "tspan") : document.createElement("span");
+      if (isSvg) x.setAttribute("text-decoration", "overline");
+      else x.className = "xbar";
+      x.textContent = "x";
+      node.appendChild(x);
+    }
+    if (part) node.appendChild(document.createTextNode(part));
+  });
+}
+
+// ---------- Settings ----------
+const LIMITS = { k: [1, 500], n: [1, 500] };
+const state = { k: 20, n: 30, seed: 7, sorted: false };
+
+// ---------- Population (hidden, used for sampling) ----------
+const N = 10000, MU = 50, SIGMA = 10;
+
+// Seeded RNG so a given setting always gives the same samples
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rand = mulberry32(42);
+function randNormal() { // Box–Muller
+  let u = 0, v = 0;
+  while (u === 0) u = rand();
+  while (v === 0) v = rand();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+const population = Array.from({ length: N }, () => MU + SIGMA * randNormal());
+const popMean = population.reduce((s, x) => s + x, 0) / N;
+const popSD = Math.sqrt(population.reduce((s, x) => s + (x - popMean) ** 2, 0) / N);
+
+// ---------- Main chart geometry (fixed axis so the spread is comparable across n) ----------
+const X_MIN = 25, X_MAX = 75, BIN_W = 1;
+const nBins = (X_MAX - X_MIN) / BIN_W;
+const binOf = x => Math.min(nBins - 1, Math.max(0, Math.floor((x - X_MIN) / BIN_W)));
+const W = 900, H = 420;
+const M = { top: 40, right: 30, bottom: 50, left: 60 };
+const iw = W - M.left - M.right, ih = H - M.top - M.bottom;
+const sx = x => M.left + (x - X_MIN) / (X_MAX - X_MIN) * iw;
+
+const svg = document.getElementById("chart");
+const strip = document.getElementById("strip");
+const links = document.getElementById("links");
+const tip = document.getElementById("tip");
+
+let samples = [], counts = [], barEls = [];
+
+function niceStep(maxVal) {
+  const raw = maxVal / 5;
+  for (const s of [1, 2, 5, 10, 20, 50, 100]) if (s >= raw) return s;
+  return 100;
+}
+
+// ---------- Build everything for the current settings ----------
+function render() {
+  // Each sample has its own RNG stream, so "+" on samples adds one new card and
+  // "+" on n adds one more value to every existing sample (the rest stay the same).
+  samples = Array.from({ length: state.k }, (_, i) => {
+    const r = mulberry32(state.seed * 100003 + i * 7919);
+    const values = Array.from({ length: state.n },
+      () => population[Math.floor(r() * N)]);
+    return { values, xbar: values.reduce((s, x) => s + x, 0) / state.n };
+  });
+  const means = samples.map(s => s.xbar);
+  const meanOfMeans = means.reduce((s, x) => s + x, 0) / means.length;
+  const sdOfMeans = Math.sqrt(means.reduce((s, x) => s + (x - meanOfMeans) ** 2, 0) / means.length);
+  const seTheory = popSD / Math.sqrt(state.n);
+
+  setXbar(document.getElementById("sub"),
+    `${state.k} sample means (n = ${state.n}) · SD of x̄ = ${sdOfMeans.toFixed(2)} ` +
+    `· σ/√n = ${seTheory.toFixed(2)}`);
+  const keepScroll = strip.scrollLeft;
+  drawMain(meanOfMeans, sdOfMeans);
+  drawCards();
+  strip.scrollLeft = keepScroll;
+  drawLinks();
+}
+
+function drawMain(meanOfMeans, sdOfMeans) {
+  svg.innerHTML = "";
+  counts = new Array(nBins).fill(0);
+  // Assign slots in order of x̄ so endpoints within a bin follow the actual values
+  // (and sorted cards never have crossing curves)
+  [...samples].sort((a, b) => a.xbar - b.xbar).forEach(s => {
+    s.bin = binOf(s.xbar);
+    s.slot = counts[s.bin]++;  // position within its bin, used to spread curve endpoints
+  });
+  const maxCount = Math.max(...counts);
+  const step = niceStep(maxCount + 1);
+  const yMax = Math.ceil((maxCount + 1) / step) * step;
+  const sy = c => M.top + ih - c / yMax * ih;
+
+  for (let c = 0; c <= yMax; c += step) {
+    const y = sy(c);
+    el("line", { x1: M.left, x2: W - M.right, y1: y, y2: y, class: "gridline" }, svg);
+    el("text", { x: M.left - 8, y: y + 4, "text-anchor": "end",
+                 fill: "var(--muted)", "font-size": 12 }, svg).textContent = c;
+  }
+
+  barEls = counts.map((c, i) => {
+    const x0 = X_MIN + i * BIN_W;
+    const r = el("rect", {
+      x: sx(x0) + 0.5, y: sy(c), width: sx(x0 + BIN_W) - sx(x0) - 1,
+      height: sy(0) - sy(c), class: "bar", rx: 1
+    }, svg);
+    r.addEventListener("mousemove", e => {
+      setXbar(tip, `x̄ in ${x0}–${x0 + BIN_W}: ${c} sample${c === 1 ? "" : "s"}`);
+      tip.style.left = e.clientX + 12 + "px"; tip.style.top = e.clientY - 28 + "px";
+      tip.style.opacity = 1;
+    });
+    r.addEventListener("mouseleave", () => tip.style.opacity = 0);
+    return r;
+  });
+
+  const ax = el("g", { class: "axis" }, svg);
+  el("line", { x1: M.left, x2: W - M.right, y1: sy(0), y2: sy(0) }, ax);
+  for (let v = X_MIN; v <= X_MAX; v += 5) {
+    el("line", { x1: sx(v), x2: sx(v), y1: sy(0), y2: sy(0) + 5 }, ax);
+    el("text", { x: sx(v), y: sy(0) + 20, "text-anchor": "middle" }, ax).textContent = v;
+  }
+  setXbar(el("text", { x: M.left + iw / 2, y: H - 8, "text-anchor": "middle", class: "label" }, svg),
+    "Sample mean x̄");
+  el("text", { x: -(M.top + ih / 2), y: 16, transform: "rotate(-90)",
+               "text-anchor": "middle", class: "label" }, svg)
+    .textContent = "Number of samples";
+
+  // Population mean μ
+  el("line", { x1: sx(popMean), x2: sx(popMean), y1: M.top - 10, y2: sy(0), class: "mean-line" }, svg);
+  el("text", { x: sx(popMean), y: M.top - 16, "text-anchor": "middle", class: "mean-text" }, svg)
+    .textContent = `μ = ${popMean.toFixed(1)}`;
+
+  // ±1 SD of the sample means (the observed standard error)
+  const yb = M.top + 14;
+  const a = sx(meanOfMeans - sdOfMeans), b = sx(meanOfMeans + sdOfMeans);
+  el("line", { x1: a, x2: b, y1: yb, y2: yb, class: "sd-line" }, svg);
+  [a, b].forEach(x => el("line", { x1: x, x2: x, y1: yb - 6, y2: yb + 6, class: "sd-line" }, svg));
+  setXbar(el("text", { x: b + 8, y: yb + 4, class: "sd-text" }, svg),
+    `±SD of x̄ = ${sdOfMeans.toFixed(2)}`);
+}
+
+// ---------- Mini distributions ----------
+const MINI_MIN = 10, MINI_MAX = 90, MINI_BIN = 5;
+
+function drawCards() {
+  strip.innerHTML = "";
+  // Cards keep their original "Sample k" number; only their order changes when sorted
+  const order = samples.map((_, i) => i);
+  if (state.sorted) order.sort((a, b) => samples[a].xbar - samples[b].xbar);
+  order.forEach(idx => {
+    const sample = samples[idx];
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML =
+      `<p class="card-title">Sample ${idx + 1}</p>` +
+      `<p class="card-meta">n = ${sample.values.length}</p>`;
+    strip.appendChild(card);
+
+    const w = 160, h = 90, mb = 14;
+    const s = el("svg", { viewBox: `0 0 ${w} ${h}` }, card);
+    const nb = (MINI_MAX - MINI_MIN) / MINI_BIN;
+    const c = new Array(nb).fill(0);
+    for (const x of sample.values) {
+      const i = Math.floor((x - MINI_MIN) / MINI_BIN);
+      if (i >= 0 && i < nb) c[i]++;
+    }
+    const cmax = Math.max(...c);
+    const mx = x => (x - MINI_MIN) / (MINI_MAX - MINI_MIN) * w;
+    const my = v => (h - mb) - v / cmax * (h - mb - 6);
+
+    c.forEach((v, i) => {
+      if (!v) return;
+      const x0 = MINI_MIN + i * MINI_BIN;
+      el("rect", { x: mx(x0) + 0.5, y: my(v), width: mx(x0 + MINI_BIN) - mx(x0) - 1,
+                   height: my(0) - my(v), class: "bar" }, s);
+    });
+    el("line", { x1: 0, x2: w, y1: my(0), y2: my(0), stroke: "var(--muted)" }, s);
+    [30, 50, 70].forEach(v => {
+      el("text", { x: mx(v), y: h - 2, "text-anchor": "middle",
+                   fill: "var(--muted)", "font-size": 9 }, s).textContent = v;
+    });
+    el("line", { x1: mx(popMean), x2: mx(popMean), y1: 0, y2: my(0), class: "mu-line" }, s);
+    el("line", { x1: mx(sample.xbar), x2: mx(sample.xbar), y1: 0, y2: my(0), class: "xbar-line" }, s);
+
+    card.addEventListener("mouseenter", () => highlight(idx, true));
+    card.addEventListener("mouseleave", () => highlight(idx, false));
+    sample.card = card;
+    sample.mini = s;
+  });
+}
+
+// ---------- Curves: visible card → bottom of its x̄ bin ----------
+function chartToScreen(x, y) {
+  const p = svg.createSVGPoint();
+  p.x = x; p.y = y;
+  return p.matrixTransform(svg.getScreenCTM());
+}
+
+function drawLinks() {
+  links.innerHTML = "";
+  const sr = strip.getBoundingClientRect();
+  const yAxis = M.top + ih;
+  samples.forEach(s => {
+    const cr = s.card.getBoundingClientRect();
+    s.link = null;
+    const mid = cr.left + cr.width / 2;
+    if (mid < sr.left || mid > sr.right) return;  // card not visible in the strip
+
+    // Card end: right above the x̄ line inside the mini histogram
+    const mr = s.mini.getBoundingClientRect();
+    const cx = mr.left + (s.xbar - MINI_MIN) / (MINI_MAX - MINI_MIN) * mr.width;
+
+    // Chart end: bottom of the x̄ bin, spread across the bin when several means share it
+    const x0 = X_MIN + s.bin * BIN_W;
+    const frac = (s.slot + 1) / (counts[s.bin] + 1);
+    const end = chartToScreen(sx(x0) + frac * (sx(x0 + BIN_W) - sx(x0)), yAxis);
+    const y2 = cr.top;
+    const dy = (y2 - end.y) / 2;
+    const P = [[end.x, end.y], [end.x, end.y + dy], [cx, y2 - dy], [cx, y2]];
+
+    const g = el("g", {}, links);
+    el("path", {
+      d: `M ${P[0]} C ${P[1]}, ${P[2]}, ${P[3]}`
+    }, g);
+    el("circle", { cx: end.x, cy: end.y, r: 2.5 }, g);
+
+    // x̄ label sitting on the curve, just above the card
+    const t = 0.86, u = 1 - t;
+    const bz = i => u ** 3 * P[0][i] + 3 * u * u * t * P[1][i] + 3 * u * t * t * P[2][i] + t ** 3 * P[3][i];
+    const lx = bz(0), ly = bz(1);
+    const pill = el("g", { class: "pill" }, g);
+    const bg = el("rect", { rx: 9, ry: 9, height: 18 }, pill);
+    const txt = el("text", { x: lx, y: ly + 4, "text-anchor": "middle" }, pill);
+    setXbar(txt, `x̄ = ${s.xbar.toFixed(1)}`);
+    const tw = txt.getComputedTextLength() + 14;
+    bg.setAttribute("x", lx - tw / 2);
+    bg.setAttribute("y", ly - 9);
+    bg.setAttribute("width", tw);
+    s.link = g;
+  });
+}
+
+function highlight(i, on) {
+  const s = samples[i];
+  s.card.classList.toggle("hl", on);
+  barEls[s.bin].classList.toggle("hl", on);
+  if (s.link) {
+    s.link.classList.toggle("hl", on);
+    if (on) links.appendChild(s.link);  // bring to front
+  }
+}
+
+let raf = 0;
+const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(drawLinks); };
+strip.addEventListener("scroll", schedule, { passive: true });
+window.addEventListener("scroll", schedule, { passive: true });
+window.addEventListener("resize", schedule);
+
+// ---------- Buttons ----------
+// Click to step by 1; press and hold to keep stepping, faster the longer you hold.
+function makeStepper(id, key) {
+  const box = document.getElementById(id);
+  const input = box.querySelector("input");
+  const [minus, plus] = box.querySelectorAll("button");
+  const sync = () => {
+    input.value = state[key];
+    minus.disabled = state[key] <= LIMITS[key][0];
+    plus.disabled = state[key] >= LIMITS[key][1];
+  };
+  const step = d => {
+    const v = Math.min(LIMITS[key][1], Math.max(LIMITS[key][0], state[key] + d));
+    if (v === state[key]) return false;
+    state[key] = v; sync(); render();
+    return true;
+  };
+  // Typing: apply on Enter or when the field loses focus; clamp to the limits,
+  // revert on anything that isn't a number. Arrow keys step by 1 (Shift: by 10).
+  const commit = () => {
+    const v = parseInt(input.value, 10);
+    if (Number.isNaN(v)) return sync();
+    const c = Math.min(LIMITS[key][1], Math.max(LIMITS[key][0], v));
+    if (c !== state[key]) { state[key] = c; render(); }
+    sync();
+  };
+  input.addEventListener("focus", () => input.select());
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") { commit(); input.select(); }
+    else if (e.key === "Escape") { sync(); input.blur(); }
+    else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      step((e.key === "ArrowUp" ? 1 : -1) * (e.shiftKey ? 10 : 1));
+      input.select();
+    }
+  });
+
+  [minus, plus].forEach(b => {
+    const d = Number(b.dataset.d);
+    let timer = null;
+    const stop = () => { clearTimeout(timer); timer = null; };
+    b.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      step(d);
+      let delay = 350;
+      const repeat = () => {
+        if (!step(d)) return stop();
+        delay = Math.max(30, delay * 0.85);
+        timer = setTimeout(repeat, delay);
+      };
+      timer = setTimeout(repeat, delay);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(ev => b.addEventListener(ev, stop));
+    b.addEventListener("keydown", e => {  // keyboard: Enter / Space
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); step(d); }
+    });
+  });
+  sync();
+}
+makeStepper("step-k", "k");
+makeStepper("step-n", "n");
+
+const sortBtn = document.getElementById("sort");
+sortBtn.addEventListener("click", () => {
+  state.sorted = !state.sorted;
+  sortBtn.setAttribute("aria-checked", state.sorted);
+  drawCards();          // same samples, new order
+  strip.scrollLeft = 0;
+  drawLinks();
+});
+document.getElementById("resample").addEventListener("click", () => { state.seed++; render(); });
+
+render();
+</script>
+</body>
+</html>
