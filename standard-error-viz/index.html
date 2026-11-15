@@ -25,27 +25,147 @@
     }
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
+  html, body { margin: 0; }
   body {
     background: var(--bg);
     color: var(--ink);
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    padding: 16px;
   }
-  main {
-    flex: 1; width: min(900px, 100%); text-align: center;
-    display: flex; flex-direction: column; justify-content: center;
-  }
-  h1 { font-size: 1.25rem; font-weight: 600; margin: 0 0 4px; }
-  .sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 12px; }
-  svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .xbar { text-decoration: overline; text-decoration-thickness: from-font; }
+  .num { font-variant-numeric: tabular-nums; }
 
-  /* ---------- Controls ---------- */
-  .controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  /* ---------- Scrollytelling layout: story left, sticky figure right ---------- */
+  .scrolly { display: grid; grid-template-columns: minmax(260px, 35%) 1fr; }
+  .story { padding: 0 28px 0 36px; }
+  .intro { min-height: 90vh; display: flex; flex-direction: column; justify-content: center; }
+  .intro h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 12px; }
+  .intro .lede { font-size: 1.1rem; line-height: 1.5; color: var(--muted); margin: 0 0 28px; }
+  .intro .hint { font-size: 0.9rem; color: var(--muted); margin: 0; }
+  .step { min-height: 85vh; display: flex; align-items: center; }
+  .step-card {
+    max-width: 440px; font-size: 1.05rem; line-height: 1.65;
+    opacity: .3; transition: opacity .3s;
+  }
+  .step.is-active .step-card { opacity: 1; }
+  .step-card p { margin: 0 0 .8em; }
+  .step-card p:last-child { margin: 0; }
+  .step-card b { font-weight: 650; }
+  .story-end { height: 45vh; }
+
+  .figure {
+    position: sticky; top: 0; align-self: start; height: 100vh; margin: 0;
+    padding: 20px 24px 16px 8px; display: flex; flex-direction: column; min-width: 0;
+  }
+  .fig-head { text-align: center; }
+  .fig-head h2 { font-size: 1.1rem; font-weight: 600; margin: 0 0 2px; }
+  .fig-sub { color: var(--muted); font-size: 0.85rem; margin: 0; min-height: 1.4em; }
+  .chart-wrap { flex: 1; min-height: 0; position: relative; margin-top: 8px; }
+  #chart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+  .fade-in { animation: fade-in .5s ease both; }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ---------- Main chart ---------- */
+  .bar { fill: var(--bar); transition: fill .15s, opacity .3s; }
+  .bar:hover, .bar.hl { fill: var(--bar-hover); }
+  .bar.dim { opacity: .3; }
+  .dot { fill: var(--bar); }
+  .axis line { stroke: var(--muted); }
+  .axis text { fill: var(--muted); font-size: 12px; }
+  .axis.faint { opacity: .4; }
+  .gridline { stroke: var(--grid); }
+  .label { fill: var(--ink); font-size: 13px; }
+  .n-label { fill: var(--muted); font-size: 13px; }
+  .big-q { fill: var(--muted); opacity: .35; font-size: 96px; font-weight: 600; }
+  .mean-line { stroke: var(--mean); stroke-width: 2; stroke-dasharray: 6 4; }
+  .mean-text { fill: var(--mean); font-size: 13px; font-weight: 600; }
+  .xbar-big { stroke: var(--xbar); stroke-width: 2.5; }
+  .br line { stroke-width: 2; }
+  .br text { font-size: 12.5px; font-weight: 600; }
+  .br-se line { stroke: var(--sd); }
+  .br-se text { fill: var(--sd); }
+  .br-formula line { stroke: var(--sd); stroke-dasharray: 4 3; }
+  .br-formula text { fill: var(--sd); font-weight: 500; }
+  .br-sigma line { stroke: var(--muted); opacity: .6; }
+  .br-sigma text { fill: var(--muted); font-weight: 500; }
+  .br-se2 line { stroke: var(--sd); opacity: .5; }
+  .br-se2 text { fill: var(--sd); opacity: .75; }
+  .band { fill: var(--sd); }
+  .pill rect { fill: var(--card); stroke: var(--xbar); stroke-width: 1; }
+  .pill text { fill: var(--xbar); font-size: 11px; font-weight: 600; }
+  g.hl .pill rect, .pill.solid rect { fill: var(--xbar); }
+  g.hl .pill text, .pill.solid text { fill: var(--card); }
+
+  /* ---------- Samples strip ---------- */
+  .samples { margin-top: 64px; transition: opacity .4s; }
+  .samples.off { opacity: 0; pointer-events: none; }
+  .strip {
+    --visible: 5; --gap: 12px;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - (var(--visible) - 1) * var(--gap)) / var(--visible));
+    gap: var(--gap);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+  }
+  @media (max-width: 1200px) { .strip { --visible: 4; } }
+  @media (max-width: 900px) { .strip { --visible: 3; } }
+  .card {
+    scroll-snap-align: start;
+    border: 1px solid var(--grid);
+    border-radius: 8px;
+    padding: 8px 8px 4px;
+    background: var(--card);
+    transition: border-color .15s;
+  }
+  .card.hl { border-color: var(--xbar); }
+  /* Compact strip: every card visible at once, labels hidden, just the mini histograms */
+  .strip.compact { --gap: 4px; }
+  .strip.compact .card { padding: 3px 2px 1px; border-radius: 4px; }
+  .strip.compact .card-title, .strip.compact .card-meta { display: none; }
+  .strip.compact .card svg text { display: none; }
+  .card.placeholder {
+    border-style: dashed; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 2rem; font-weight: 600; background: transparent;
+  }
+  .card-title { font-size: 12px; font-weight: 600; margin: 0; text-align: left; }
+  .card-meta { font-size: 11px; color: var(--muted); margin: 0 0 4px; text-align: left; }
+  .card svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .card svg .bar { fill: var(--bar); opacity: .8; }
+  .card svg .xbar-line { stroke: var(--xbar); stroke-width: 2; }
+  .card svg .mu-line { stroke: var(--mean); stroke-width: 1; stroke-dasharray: 3 3; opacity: .7; }
+  .samples-head {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px; margin: 4px 0 0; padding: 0 2px;
+  }
+  .samples-head h3 { font-size: 0.95rem; font-weight: 600; margin: 0; }
+
+  /* ---------- Connector curves (inside the sticky figure) ---------- */
+  #links {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; overflow: visible;
+  }
+  #links path {
+    fill: none; stroke: var(--xbar); stroke-width: 1.5; opacity: .45;
+    transition: opacity .15s, stroke-width .15s;
+  }
+  #links g.hl path { opacity: 1; stroke-width: 3; }
+  #links g.dim { opacity: .12; }
+  #links circle { fill: var(--xbar); }
+
+  /* ---------- Controls (unlocked at the end) ---------- */
+  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; transition: opacity .4s; }
+  /* Each control sits in its own box with its label, so they read as separate groups */
+  .control-box {
+    display: inline-flex; align-items: center; height: 34px; padding: 0 10px;
+    border: 1px solid var(--grid); border-radius: 8px; background: var(--card);
+  }
+  .action {
+    font: inherit; font-size: 0.85rem; color: var(--muted); cursor: pointer; gap: 6px;
+  }
+  .action:hover { color: var(--ink); border-color: var(--muted); }
+  .action-icon { font-size: 1rem; line-height: 1; }
+  .controls.off { opacity: 0; pointer-events: none; }
   .stepper { display: inline-flex; align-items: center; gap: 2px; font-size: 0.85rem; }
   .stepper-label { color: var(--muted); margin-right: 4px; }
   .stepper input {
@@ -62,12 +182,13 @@
   }
   .stepper button:hover, .icon-btn:hover { background: var(--grid); color: var(--ink); }
   .stepper button:disabled { opacity: .3; cursor: default; background: transparent; }
-  .xbar { text-decoration: overline; text-decoration-thickness: from-font; }
   .switch {
     font: inherit; font-size: 0.85rem; color: var(--muted); cursor: pointer;
     display: inline-flex; align-items: center; gap: 8px;
     padding: 2px; border: 0; background: transparent; border-radius: 999px;
   }
+  .switch.control-box { padding: 0 10px; border: 1px solid var(--grid); border-radius: 8px; background: var(--card); }
+  .switch.control-box:hover { border-color: var(--muted); }
   .switch:hover { color: var(--ink); }
   .track {
     position: relative; width: 34px; height: 20px; border-radius: 999px;
@@ -84,107 +205,172 @@
   .switch[aria-checked="true"] .knob { transform: translateX(14px); background: var(--card); }
   button:focus-visible { outline: 2px solid var(--bar); outline-offset: 1px; }
 
-  /* ---------- Main chart ---------- */
-  .bar { fill: var(--bar); transition: fill .15s; }
-  .bar:hover, .bar.hl { fill: var(--bar-hover); }
-  .axis line { stroke: var(--muted); }
-  .axis text { fill: var(--muted); font-size: 12px; }
-  .gridline { stroke: var(--grid); }
-  .label { fill: var(--ink); font-size: 13px; }
-  .mean-line { stroke: var(--mean); stroke-width: 2; stroke-dasharray: 6 4; }
-  .mean-text { fill: var(--mean); font-size: 13px; font-weight: 600; }
-  .sd-line { stroke: var(--sd); stroke-width: 2; }
-  .sd-text { fill: var(--sd); font-size: 13px; font-weight: 600; }
-
-  /* ---------- Samples strip ---------- */
-  .samples { width: 100%; margin-top: 72px; }
-  .samples-head {
-    display: flex; justify-content: space-between; align-items: baseline;
-    margin: 4px 0 0; padding: 0 2px;
-  }
-  .samples-head h2 { font-size: 1rem; font-weight: 600; margin: 0; }
-  .samples-head { align-items: center; flex-wrap: wrap; gap: 8px; }
-  .strip {
-    --visible: 7; --gap: 12px;
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: calc((100% - (var(--visible) - 1) * var(--gap)) / var(--visible));
-    gap: var(--gap);
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 8px;
-  }
-  @media (max-width: 700px) { .strip { --visible: 3; } }
-  .card {
-    scroll-snap-align: start;
-    border: 1px solid var(--grid);
-    border-radius: 8px;
-    padding: 8px 8px 4px;
-    background: var(--card);
-    transition: border-color .15s;
-  }
-  .card.hl { border-color: var(--xbar); }
-  .card-title { font-size: 12px; font-weight: 600; margin: 0; text-align: left; }
-  .card-meta { font-size: 11px; color: var(--muted); margin: 0 0 4px; text-align: left; }
-  .card svg .bar { fill: var(--bar); opacity: .8; }
-  .card svg .xbar-line { stroke: var(--xbar); stroke-width: 2; }
-  .card svg .mu-line { stroke: var(--mean); stroke-width: 1; stroke-dasharray: 3 3; opacity: .7; }
-
-  /* ---------- Connector curves ---------- */
-  #links {
-    position: fixed; inset: 0; width: 100vw; height: 100vh;
-    pointer-events: none; overflow: visible;
-  }
-  #links path {
-    fill: none; stroke: var(--xbar); stroke-width: 1.5; opacity: .45;
-    transition: opacity .15s, stroke-width .15s;
-  }
-  #links g.hl path { opacity: 1; stroke-width: 3; }
-  #links circle { fill: var(--xbar); }
-  #links .pill rect { fill: var(--card); stroke: var(--xbar); stroke-width: 1; }
-  #links .pill text { fill: var(--xbar); font-size: 11px; font-weight: 600; }
-  #links g.hl .pill rect { fill: var(--xbar); }
-  #links g.hl .pill text { fill: var(--card); }
   .tooltip {
     position: fixed; pointer-events: none; background: var(--ink); color: var(--bg);
     font-size: 12px; padding: 4px 8px; border-radius: 4px; opacity: 0; transition: opacity .1s;
+    z-index: 10;
+  }
+
+  /* ---------- Phones: figure behind, story cards scroll over it ---------- */
+  @media (max-width: 640px) {
+    .scrolly { grid-template-columns: 1fr; }
+    .figure { grid-row: 1; grid-column: 1; padding: 12px 16px; }
+    .story { grid-row: 1; grid-column: 1; position: relative; z-index: 2; padding: 0 16px; pointer-events: none; }
+    .intro > *, .step-card { pointer-events: auto; }
+    .intro { justify-content: flex-start; padding-top: 30vh; }
+    .intro, .step-card {
+      background: var(--card); border: 1px solid var(--grid); border-radius: 12px;
+      box-shadow: 0 6px 24px rgb(0 0 0 / .12);
+    }
+    .intro { min-height: auto; margin-top: 35vh; padding: 20px; }
+    .step-card { padding: 16px 18px; opacity: .9; }
+    .step { align-items: flex-end; padding-bottom: 6vh; }
   }
 </style>
 </head>
 <body>
-<main>
-  <h1>Sampling distribution of the sample mean</h1>
-  <p class="sub" id="sub"></p>
-  <svg id="chart" viewBox="0 0 900 420" role="img" aria-label="Histogram of the sample means"></svg>
-</main>
-<section class="samples">
-  <div class="strip" id="strip"></div>
-  <div class="samples-head">
-    <h2>Samples from the population</h2>
-    <div class="controls">
-      <div class="stepper" id="step-k" role="group" aria-label="Number of samples">
-        <span class="stepper-label">samples</span>
-        <button type="button" data-d="-1" aria-label="Fewer samples">−</button>
-        <input type="text" inputmode="numeric" aria-label="Number of samples">
-        <button type="button" data-d="1" aria-label="More samples">+</button>
-      </div>
-      <div class="stepper" id="step-n" role="group" aria-label="Sample size n">
-        <span class="stepper-label">n</span>
-        <button type="button" data-d="-1" aria-label="Smaller samples">−</button>
-        <input type="text" inputmode="numeric" aria-label="Sample size n">
-        <button type="button" data-d="1" aria-label="Larger samples">+</button>
-      </div>
-      <button type="button" class="switch" id="sort" role="switch" aria-checked="false" title="Order the cards by their mean">
-        <span class="switch-label">sort by <span class="xbar">x</span></span>
-        <span class="track"><span class="knob"></span></span>
-      </button>
-      <button type="button" class="icon-btn" id="resample" title="New samples" aria-label="New samples">↻</button>
+<div class="scrolly">
+  <article class="story">
+    <header class="intro">
+      <h1>How much can you trust an average?</h1>
+      <p class="lede">A visual introduction to the standard error, told with a coffee shop.</p>
+      <p class="hint">Scroll to begin ↓</p>
+    </header>
+
+    <!-- Act 1: one sample -->
+    <section class="step"><div class="step-card">
+      <p>A coffee shop wants to know: <b>how long do customers wait for their order, on average?</b></p>
+      <p>They can't time every customer, so they time a <b>sample</b>.</p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p>They time <b>30 customers</b>. Each dot is one customer's wait.</p>
+      <p>The number of observations in a sample is called <b>n</b>, so here <b>n = 30</b>. Some customers wait a short time, others much longer.</p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p>Averaging the 30 waits gives the <b>sample mean</b>, written <span class="xbar">x</span>:</p>
+      <p><b><span class="xbar">x</span> = <span class="num" data-v="xbar1"></span> min</b></p>
+      <p>It's our best guess for the true average wait, <b>μ</b> (“mu”), which we don't know.</p>
+    </div></section>
+
+    <!-- Act 2: why one mean isn't enough -->
+    <section class="step"><div class="step-card">
+      <p>How much should we trust <span class="num" data-v="xbar1"></span>? If they had timed a <i>different</i> 30 customers, would they get <span class="num" data-v="xbar1"></span> again? Almost certainly not.</p>
+      <p><b><span class="xbar">x</span> depends on which customers happened to be in the sample.</b> To know how far off our guess might be, we need to know how much <span class="xbar">x</span> changes from sample to sample.</p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p>Another 30 customers: <b><span class="xbar">x</span> = <span class="num" data-v="xbar2"></span> min</b>.</p>
+      <p>Same shop, same process, a different answer. The sample mean is itself <b>random</b>.</p>
+    </div></section>
+
+    <!-- Act 3: the distribution of the sample means -->
+    <section class="step"><div class="step-card">
+      <p>Imagine repeating this <b>20 times</b>: 20 samples of 30 customers, each with its own mean.</p>
+      <p>(Scroll the strip sideways to see them all.)</p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p>Now keep only the means and stack them up.</p>
+      <p>This pile is the <b>sampling distribution of the sample mean</b>: the values <span class="xbar">x</span> tends to take.</p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p>The means cluster around the true average, <b>μ = 5 min</b>.</p>
+      <p>Single samples miss, but not consistently too high or too low.</p>
+    </div></section>
+
+    <!-- Act 4: the standard error -->
+    <section class="step"><div class="step-card">
+      <p>How spread out are the means? Their standard deviation is about <b><span class="num" data-v="sd20"></span> min</b> (≈ <span class="num" data-v="sd20s"></span> s).</p>
+      <p>That's the <b>standard error (SE)</b>: how far a typical sample mean lands from the truth.</p>
+      <p>Compare it with individual customers, whose waits vary by about <b>σ = 1 min</b> (the faint grey bracket). <b>Averages vary much less than individuals.</b></p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p>Statisticians have a shortcut:</p>
+      <p><b>SE = σ / √n = 1 / √30 ≈ <span class="num" data-v="seF"></span> min</b></p>
+      <p>Instead of drawing many samples, it predicts the standard error from just two numbers: <b>σ</b>, how much individual waits vary (1 min), and <b>n</b>, how many customers are in each sample (30). Dividing by √n captures that averaging more customers cancels out more of the ups and downs.</p>
+      <p>That's close to what we measured (<span class="num" data-v="sd20"></span>), but not quite the same. Why?</p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p>With only 20 samples, our pile is a rough sketch. Let's draw <b>more samples</b>: 50, 100, 200…</p>
+      <p>The pile fills into a smooth bell, and the measured spread settles at <b>≈ <span class="num" data-v="sd200"></span> min</b>, matching the formula.</p>
+      <p>More samples didn't change the standard error. They gave us a <b>more precise measurement</b> of it.</p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p>What if each sample had more customers?</p>
+      <p>With only <b>n = 5</b> customers per sample, the means are widely spread: <b>SE ≈ <span class="num" data-v="se5"></span> min</b> (≈ <span class="num" data-v="se5s"></span> s).</p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p>With <b>n = 30</b>: <b>SE ≈ <span class="num" data-v="se30"></span> min</b> (≈ <span class="num" data-v="se30s"></span> s).</p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p>With <b>n = 100</b>: <b>SE ≈ <span class="num" data-v="se100"></span> min</b> (≈ <span class="num" data-v="se100s"></span> s).</p>
+      <p><b>Bigger samples give more reliable means.</b> But because of the square root, timing <b>4× as many customers only halves the SE</b>.</p>
+    </div></section>
+
+    <!-- Act 5: back to the real world -->
+    <section class="step"><div class="step-card">
+      <p>In real life, the coffee shop has just <b>one</b> sample and <b>one</b> <span class="xbar">x</span>. It can't see this pile.</p>
+      <p>But now we know what it looks like: their <span class="xbar">x</span> is one of these values, usually within about <b>1 SE</b> of the true average, and almost never more than 2–3 SE away.</p>
+      <p>So the standard error tells you how much to <b>trust</b> a single sample mean. A small SE means your one number is probably close to the truth.</p>
+    </div></section>
+
+    <section class="step"><div class="step-card">
+      <p><b>Your turn.</b> Change the number of samples and n under the sample cards, and watch the standard error change.</p>
+      <p>Hover a card to follow its mean, or sort the cards by <span class="xbar">x</span>.</p>
+    </div></section>
+
+    <div class="story-end"></div>
+  </article>
+
+  <figure class="figure" id="figure">
+    <div class="fig-head">
+      <h2 id="fig-title"></h2>
+      <p class="fig-sub" id="fig-sub"></p>
     </div>
-  </div>
-</section>
-<svg id="links" aria-hidden="true"></svg>
+    <div class="chart-wrap" id="chart-wrap">
+      <svg id="chart" role="img" aria-label="Chart for the current step of the story"></svg>
+    </div>
+    <section class="samples off" id="samples">
+      <div class="strip" id="strip"></div>
+      <div class="samples-head">
+        <h3>Samples from the population</h3>
+        <div class="controls off" id="controls">
+          <div class="stepper control-box" id="step-k" role="group" aria-label="Number of samples">
+            <span class="stepper-label">number of samples</span>
+            <button type="button" data-d="-1" aria-label="Fewer samples">−</button>
+            <input type="text" inputmode="numeric" aria-label="Number of samples">
+            <button type="button" data-d="1" aria-label="More samples">+</button>
+          </div>
+          <div class="stepper control-box" id="step-n" role="group" aria-label="Sample size n">
+            <span class="stepper-label">n</span>
+            <button type="button" data-d="-1" aria-label="Smaller samples">−</button>
+            <input type="text" inputmode="numeric" aria-label="Sample size n">
+            <button type="button" data-d="1" aria-label="Larger samples">+</button>
+          </div>
+          <button type="button" class="switch control-box" id="sort" role="switch" aria-checked="false" title="Order the cards by their mean">
+            <span class="switch-label">sort by <span class="xbar">x</span></span>
+            <span class="track"><span class="knob"></span></span>
+          </button>
+          <button type="button" class="action control-box" id="resample" title="Draw a fresh set of samples">
+            <span class="action-icon" aria-hidden="true">↻</span> new samples
+          </button>
+        </div>
+      </div>
+    </section>
+    <svg id="links" aria-hidden="true"></svg>
+  </figure>
+</div>
 <div class="tooltip" id="tip"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/scrollama@3.2.0/build/scrollama.min.js"></script>
 <script>
 const NS = "http://www.w3.org/2000/svg";
 function el(tag, attrs, parent) {
@@ -211,14 +397,16 @@ function setXbar(node, str) {
   });
 }
 
-// ---------- Settings ----------
-const LIMITS = { k: [1, 500], n: [1, 500] };
-const state = { k: 20, n: 30, seed: 7, sorted: false };
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
+const sdev = a => { const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / a.length); };
+const f2 = v => v.toFixed(2);
+const secs = v => Math.round(v * 60);
 
-// ---------- Population (hidden, used for sampling) ----------
-const N = 10000, MU = 50, SIGMA = 10;
+// ---------- Population: wait times in minutes (hidden, used for sampling) ----------
+const N = 10000, MU = 5, SIGMA = 1;
 
-// Seeded RNG so a given setting always gives the same samples
+// Seeded RNG so the story's numbers are the same on every visit
 function mulberry32(a) {
   return function () {
     a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -235,130 +423,292 @@ function randNormal() { // Box–Muller
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 const population = Array.from({ length: N }, () => MU + SIGMA * randNormal());
-const popMean = population.reduce((s, x) => s + x, 0) / N;
-const popSD = Math.sqrt(population.reduce((s, x) => s + (x - popMean) ** 2, 0) / N);
+const popMean = mean(population);
+const popSD = sdev(population);
 
-// ---------- Main chart geometry (fixed axis so the spread is comparable across n) ----------
-const X_MIN = 25, X_MAX = 75, BIN_W = 1;
-const nBins = (X_MAX - X_MIN) / BIN_W;
-const binOf = x => Math.min(nBins - 1, Math.max(0, Math.floor((x - X_MIN) / BIN_W)));
-const W = 900, H = 420;
-const M = { top: 40, right: 30, bottom: 50, left: 60 };
-const iw = W - M.left - M.right, ih = H - M.top - M.bottom;
-const sx = x => M.left + (x - X_MIN) / (X_MAX - X_MIN) * iw;
+// Each sample has its own RNG stream: adding samples keeps the existing ones,
+// and raising n adds values to each sample.
+const BASE_SEED = 7;
+function makeSamples(k, n, seed) {
+  return Array.from({ length: k }, (_, i) => {
+    const r = mulberry32(seed * 100003 + i * 7919);
+    const values = Array.from({ length: n }, () => population[Math.floor(r() * N)]);
+    return { i, values, xbar: mean(values) };
+  });
+}
 
+// ---------- Numbers quoted in the story text ----------
+{
+  const s20 = makeSamples(20, 30, BASE_SEED);
+  const sd20 = sdev(s20.map(s => s.xbar));
+  const sd200 = sdev(makeSamples(200, 30, BASE_SEED).map(s => s.xbar));
+  // The n = 5 / 30 / 100 steps quote the spread measured from 200 samples, so the
+  // text matches the SE bracket on screen (the formula marker sits right next to it)
+  const se = n => sdev(makeSamples(200, n, BASE_SEED).map(s => s.xbar));
+  const nums = {
+    xbar1: f2(s20[0].xbar), xbar2: f2(s20[1].xbar),
+    sd20: f2(sd20), sd20s: secs(sd20), sd200: f2(sd200), seF: f2(popSD / Math.sqrt(30)),
+    se5: f2(se(5)), se5s: secs(se(5)), se30: f2(se(30)), se30s: secs(se(30)),
+    se100: f2(se(100)), se100s: secs(se(100)),
+  };
+  document.querySelectorAll("[data-v]").forEach(e => e.textContent = nums[e.dataset.v]);
+}
+
+// ---------- Story: what the figure shows at each step ----------
+const DEFAULTS = {
+  k: 20, n: 30, main: "means", strip: false, placeholder: false, links: "none",
+  xbar: false, mu: false, se: false, sigma: false, formula: false, band: false,
+  focus: null, controls: false, sandbox: false, anim: null, dur: 900, demoScroll: false, compact: false,
+};
+const STEPS = [
+  { main: "empty", k: 1 },                                                    // the question
+  { main: "sample", k: 1 },                                                   // one sample, n
+  { main: "sample", k: 1, xbar: true },                                       // its mean
+  { main: "axis", k: 1, strip: true, placeholder: true, links: "pills" },     // the doubt
+  { main: "axis", k: 2, strip: true, links: "pills" },                        // a second sample
+  { main: "axis", k: 20, strip: true, links: "pills", demoScroll: true },     // many samples
+  { k: 20, strip: true, links: "curves", anim: "drop", compact: true },       // collect the means
+  { k: 20, strip: true, links: "curves", mu: true },                          // center
+  { k: 20, strip: true, links: "curves", mu: true, se: true, sigma: true },   // spread = SE
+  { k: 20, strip: true, links: "curves", mu: true, se: true, sigma: true, formula: true }, // σ/√n
+  { k: 200, strip: true, links: "curves", mu: true, se: true, formula: true, dur: 3200 },  // more samples
+  { k: 200, n: 5, strip: true, links: "curves", mu: true, se: true, formula: true, dur: 1200 },
+  { k: 200, n: 30, strip: true, links: "curves", mu: true, se: true, formula: true, dur: 1200 },
+  { k: 200, n: 100, strip: true, links: "curves", mu: true, se: true, formula: true, dur: 1200 },
+  { k: 200, n: 30, strip: true, links: "curves", mu: true, band: true, focus: 0 },          // one sample in reality
+  { k: 200, n: 30, strip: true, links: "curves", mu: true, se: true, formula: true,
+    controls: true, sandbox: true },                                                         // sandbox
+];
+
+const LIMITS = { k: [1, 500], n: [1, 500] };
+const state = { k: 1, n: 30, seed: BASE_SEED, sorted: false, reveal: Infinity };
+let view = { ...DEFAULTS, ...STEPS[0] };
+let fresh = new Set();   // flags that just turned on: their elements fade in
+let samples = [], barEls = [], stats = {};
+let resetStripScroll = true;
+
+// ---------- Elements ----------
+const figure = document.getElementById("figure");
+const chartWrap = document.getElementById("chart-wrap");
 const svg = document.getElementById("chart");
+const samplesEl = document.getElementById("samples");
 const strip = document.getElementById("strip");
 const links = document.getElementById("links");
+const controls = document.getElementById("controls");
 const tip = document.getElementById("tip");
 
-let samples = [], counts = [], barEls = [];
+// ---------- Chart geometry (sized to the real pixels, so text stays readable) ----------
+// Individual waits use a wide axis; the means use a zoomed-in one so their spread is readable
+const RANGE = { wide: [2, 8, 1], zoom: [3.5, 6.5, 0.5] };   // [min, max, tick step]
+const MEAN_BIN = 0.1, DOT_BIN = 0.25;
+let X_MIN = 2, X_MAX = 8, X_TICK = 1;
+const M = { top: 104, right: 24, bottom: 48, left: 52 };
+const ROW = { mu: 16, top: 40, mid: 62, low: 84 };   // y of the label rows above the plot
+let W = 600, H = 400, iw = 0, ih = 0, axisY = 0;
+const sx = x => M.left + (x - X_MIN) / (X_MAX - X_MIN) * iw;
+const binOf = (x, w) => Math.min(Math.round((X_MAX - X_MIN) / w) - 1, Math.max(0, Math.floor((x - X_MIN) / w)));
 
 function niceStep(maxVal) {
   const raw = maxVal / 5;
-  for (const s of [1, 2, 5, 10, 20, 50, 100]) if (s >= raw) return s;
-  return 100;
+  for (const s of [1, 2, 5, 10, 20, 50, 100, 200]) if (s >= raw) return s;
+  return 500;
 }
 
-// ---------- Build everything for the current settings ----------
-function render() {
-  // Each sample has its own RNG stream, so "+" on samples adds one new card and
-  // "+" on n adds one more value to every existing sample (the rest stay the same).
-  samples = Array.from({ length: state.k }, (_, i) => {
-    const r = mulberry32(state.seed * 100003 + i * 7919);
-    const values = Array.from({ length: state.n },
-      () => population[Math.floor(r() * N)]);
-    return { values, xbar: values.reduce((s, x) => s + x, 0) / state.n };
-  });
-  const means = samples.map(s => s.xbar);
-  const meanOfMeans = means.reduce((s, x) => s + x, 0) / means.length;
-  const sdOfMeans = Math.sqrt(means.reduce((s, x) => s + (x - meanOfMeans) ** 2, 0) / means.length);
-  const seTheory = popSD / Math.sqrt(state.n);
-
-  setXbar(document.getElementById("sub"),
-    `${state.k} sample means (n = ${state.n}) · SD of x̄ = ${sdOfMeans.toFixed(2)} ` +
-    `· σ/√n = ${seTheory.toFixed(2)}`);
-  const keepScroll = strip.scrollLeft;
-  drawMain(meanOfMeans, sdOfMeans);
-  drawCards();
-  strip.scrollLeft = keepScroll;
-  drawLinks();
+function pill(parent, x, y, str, cls = "") {
+  const g = el("g", { class: "pill " + cls }, parent);
+  const bg = el("rect", { rx: 9, ry: 9, height: 18, y: y - 9 }, g);
+  const t = el("text", { x, y: y + 4, "text-anchor": "middle" }, g);
+  setXbar(t, str);
+  const w = t.getComputedTextLength() + 14;
+  bg.setAttribute("x", x - w / 2);
+  bg.setAttribute("width", w);
+  return g;
 }
 
-function drawMain(meanOfMeans, sdOfMeans) {
+// Horizontal bracket from a to b with a label; the label flips to the left if it would overflow
+function bracket(a, b, y, cls, label, flag) {
+  const g = el("g", { class: `br ${cls}${fresh.has(flag) ? " fade-in" : ""}` }, svg);
+  const x1 = sx(a), x2 = sx(b);
+  el("line", { x1, x2, y1: y, y2: y }, g);
+  [x1, x2].forEach(x => el("line", { x1: x, x2: x, y1: y - 6, y2: y + 6 }, g));
+  const t = el("text", { x: x2 + 8, y: y + 4 }, g);
+  setXbar(t, label);
+  if (x2 + 8 + t.getComputedTextLength() > W - 4) {
+    t.setAttribute("x", x1 - 8);
+    t.setAttribute("text-anchor", "end");
+  }
+}
+
+function xAxis(label, faint) {
+  const ax = el("g", { class: "axis" + (faint ? " faint" : "") }, svg);
+  el("line", { x1: M.left, x2: W - M.right, y1: axisY, y2: axisY }, ax);
+  for (let v = X_MIN; v <= X_MAX + 1e-9; v += X_TICK) {
+    el("line", { x1: sx(v), x2: sx(v), y1: axisY, y2: axisY + 5 }, ax);
+    el("text", { x: sx(v), y: axisY + 20, "text-anchor": "middle" }, ax).textContent = +v.toFixed(1);
+  }
+  setXbar(el("text", { x: M.left + iw / 2, y: H - 6, "text-anchor": "middle", class: "label" }, ax), label);
+}
+
+function muLine() {
+  const g = el("g", { class: fresh.has("mu") ? "fade-in" : "" }, svg);
+  el("line", { x1: sx(popMean), x2: sx(popMean), y1: ROW.mu + 8, y2: axisY, class: "mean-line" }, g);
+  el("text", { x: sx(popMean), y: ROW.mu, "text-anchor": "middle", class: "mean-text" }, g)
+    .textContent = `μ = ${popMean.toFixed(1)} min`;
+}
+
+// ---------- Main chart ----------
+function drawMain() {
+  const r = chartWrap.getBoundingClientRect();
+  W = Math.max(300, r.width); H = Math.max(260, r.height);
+  iw = W - M.left - M.right; ih = H - M.top - M.bottom; axisY = M.top + ih;
+  [X_MIN, X_MAX, X_TICK] = RANGE[view.main === "empty" || view.main === "sample" ? "wide" : "zoom"];
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   svg.innerHTML = "";
-  counts = new Array(nBins).fill(0);
-  // Assign slots in order of x̄ so endpoints within a bin follow the actual values
-  // (and sorted cards never have crossing curves)
-  [...samples].sort((a, b) => a.xbar - b.xbar).forEach(s => {
-    s.bin = binOf(s.xbar);
-    s.slot = counts[s.bin]++;  // position within its bin, used to spread curve endpoints
-  });
-  const maxCount = Math.max(...counts);
-  const step = niceStep(maxCount + 1);
-  const yMax = Math.ceil((maxCount + 1) / step) * step;
-  const sy = c => M.top + ih - c / yMax * ih;
-
-  for (let c = 0; c <= yMax; c += step) {
-    const y = sy(c);
-    el("line", { x1: M.left, x2: W - M.right, y1: y, y2: y, class: "gridline" }, svg);
-    el("text", { x: M.left - 8, y: y + 4, "text-anchor": "end",
-                 fill: "var(--muted)", "font-size": 12 }, svg).textContent = c;
+  barEls = [];
+  if (fresh.has("main")) {  // restart the fade when the chart changes kind
+    svg.classList.remove("fade-in"); void svg.getBoundingClientRect(); svg.classList.add("fade-in");
   }
 
-  barEls = counts.map((c, i) => {
-    const x0 = X_MIN + i * BIN_W;
-    const r = el("rect", {
-      x: sx(x0) + 0.5, y: sy(c), width: sx(x0 + BIN_W) - sx(x0) - 1,
-      height: sy(0) - sy(c), class: "bar", rx: 1
-    }, svg);
-    r.addEventListener("mousemove", e => {
-      setXbar(tip, `x̄ in ${x0}–${x0 + BIN_W}: ${c} sample${c === 1 ? "" : "s"}`);
-      tip.style.left = e.clientX + 12 + "px"; tip.style.top = e.clientY - 28 + "px";
-      tip.style.opacity = 1;
+  if (view.main === "empty") {
+    xAxis("Wait time (minutes)", true);
+    el("text", { x: M.left + iw / 2, y: M.top + ih / 2 + 30, "text-anchor": "middle", class: "big-q" }, svg)
+      .textContent = "?";
+    return;
+  }
+
+  if (view.main === "sample") {
+    // Dot plot: one dot per customer in the first sample
+    const s = samples[0];
+    const nb = Math.round((X_MAX - X_MIN) / DOT_BIN);
+    const stacks = new Array(nb).fill(0);
+    const binW = sx(X_MIN + DOT_BIN) - sx(X_MIN);
+    const placed = s.values.map(v => { const b = binOf(v, DOT_BIN); return [b, stacks[b]++]; });
+    const rad = Math.max(2, Math.min(binW / 2 - 1.5, (ih - 10) / (2 * Math.max(...stacks)) - 1));
+    placed.forEach(([b, j]) => el("circle", {
+      cx: sx(X_MIN + (b + 0.5) * DOT_BIN), cy: axisY - rad - 2 - j * (2 * rad + 2), r: rad, class: "dot"
+    }, svg));
+    xAxis("Wait time (minutes)");
+    if (view.xbar) {
+      const g = el("g", { class: fresh.has("xbar") ? "fade-in" : "" }, svg);
+      el("line", { x1: sx(s.xbar), x2: sx(s.xbar), y1: ROW.mid + 10, y2: axisY, class: "xbar-big" }, g);
+      pill(g, sx(s.xbar), ROW.mid, `x̄ = ${f2(s.xbar)} min`, "solid");
+    }
+    return;
+  }
+
+  // Sampling distribution of x̄ ("axis" = empty axes before the means arrive)
+  const nb = Math.round((X_MAX - X_MIN) / MEAN_BIN);
+  const full = new Array(nb).fill(0), counts = new Array(nb).fill(0);
+  samples.forEach(s => full[binOf(s.xbar, MEAN_BIN)]++);
+  const shown = view.main === "means" ? samples.filter(s => s.i < state.reveal) : [];
+  // Slots in order of x̄ so endpoints within a bin follow the values (sorted cards never cross)
+  samples.forEach(s => { s.bin = null; });
+  [...shown].sort((a, b) => a.xbar - b.xbar).forEach(s => {
+    s.bin = binOf(s.xbar, MEAN_BIN);
+    s.slot = counts[s.bin]++;
+  });
+  stats.counts = counts;
+
+  if (view.main === "means") {
+    const maxCount = Math.max(...full);   // fixed y scale while the means drop in
+    const step = niceStep(maxCount + 1);
+    const yMax = Math.ceil((maxCount + 1) / step) * step;
+    const sy = c => axisY - c / yMax * ih;
+
+    for (let c = 0; c <= yMax; c += step) {
+      el("line", { x1: M.left, x2: W - M.right, y1: sy(c), y2: sy(c), class: "gridline" }, svg);
+      el("text", { x: M.left - 8, y: sy(c) + 4, "text-anchor": "end",
+                   fill: "var(--muted)", "font-size": 12 }, svg).textContent = c;
+    }
+    el("text", { x: -(M.top + ih / 2), y: 14, transform: "rotate(-90)",
+                 "text-anchor": "middle", class: "label" }, svg).textContent = "Number of samples";
+
+    if (view.band) {
+      const se = popSD / Math.sqrt(state.n);
+      const g = el("g", { class: fresh.has("band") ? "fade-in" : "" }, svg);
+      [[2, .07], [1, .12]].forEach(([m, o]) => el("rect", {
+        x: sx(popMean - m * se), width: sx(popMean + m * se) - sx(popMean - m * se),
+        y: M.top - 6, height: axisY - M.top + 6, class: "band", opacity: o
+      }, g));
+    }
+
+    const focusBin = view.focus != null && samples[view.focus] ? samples[view.focus].bin : null;
+    barEls = counts.map((c, i) => {
+      if (!c) return null;
+      const x0 = X_MIN + i * MEAN_BIN;
+      const cls = "bar" + (focusBin == null ? "" : i === focusBin ? " hl" : " dim");
+      const r = el("rect", {
+        x: sx(x0) + 0.5, y: sy(c), width: Math.max(1, sx(x0 + MEAN_BIN) - sx(x0) - 1),
+        height: axisY - sy(c), class: cls, rx: 1
+      }, svg);
+      r.addEventListener("mousemove", e => {
+        setXbar(tip, `x̄ in ${f2(x0)}–${f2(x0 + MEAN_BIN)} min: ${c} sample${c === 1 ? "" : "s"}`);
+        tip.style.left = e.clientX + 12 + "px"; tip.style.top = e.clientY - 28 + "px";
+        tip.style.opacity = 1;
+      });
+      r.addEventListener("mouseleave", () => tip.style.opacity = 0);
+      return r;
     });
-    r.addEventListener("mouseleave", () => tip.style.opacity = 0);
-    return r;
-  });
-
-  const ax = el("g", { class: "axis" }, svg);
-  el("line", { x1: M.left, x2: W - M.right, y1: sy(0), y2: sy(0) }, ax);
-  for (let v = X_MIN; v <= X_MAX; v += 5) {
-    el("line", { x1: sx(v), x2: sx(v), y1: sy(0), y2: sy(0) + 5 }, ax);
-    el("text", { x: sx(v), y: sy(0) + 20, "text-anchor": "middle" }, ax).textContent = v;
   }
-  setXbar(el("text", { x: M.left + iw / 2, y: H - 8, "text-anchor": "middle", class: "label" }, svg),
-    "Sample mean x̄");
-  el("text", { x: -(M.top + ih / 2), y: 16, transform: "rotate(-90)",
-               "text-anchor": "middle", class: "label" }, svg)
-    .textContent = "Number of samples";
 
-  // Population mean μ
-  el("line", { x1: sx(popMean), x2: sx(popMean), y1: M.top - 10, y2: sy(0), class: "mean-line" }, svg);
-  el("text", { x: sx(popMean), y: M.top - 16, "text-anchor": "middle", class: "mean-text" }, svg)
-    .textContent = `μ = ${popMean.toFixed(1)}`;
+  xAxis("Sample mean x̄ (minutes)", view.main === "axis");
+  if (view.mu) muLine();
 
-  // ±1 SD of the sample means (the observed standard error)
-  const yb = M.top + 14;
-  const a = sx(meanOfMeans - sdOfMeans), b = sx(meanOfMeans + sdOfMeans);
-  el("line", { x1: a, x2: b, y1: yb, y2: yb, class: "sd-line" }, svg);
-  [a, b].forEach(x => el("line", { x1: x, x2: x, y1: yb - 6, y2: yb + 6, class: "sd-line" }, svg));
-  setXbar(el("text", { x: b + 8, y: yb + 4, class: "sd-text" }, svg),
-    `±SD of x̄ = ${sdOfMeans.toFixed(2)}`);
+  const seF = popSD / Math.sqrt(state.n);
+  if (view.sigma) bracket(popMean - popSD, popMean + popSD, ROW.top, "br-sigma",
+    `individual waits: σ ≈ ${popSD.toFixed(1)} min`, "sigma");
+  if (view.se && shown.length > 1) {
+    const sd = sdev(shown.map(s => s.xbar)), m = mean(shown.map(s => s.xbar));
+    bracket(m - sd, m + sd, ROW.mid, "br-se", `SE ≈ ${f2(sd)} min (≈ ${secs(sd)} s)`, "se");
+  }
+  if (view.formula) bracket(popMean - seF, popMean + seF, ROW.low, "br-formula",
+    `σ/√n ≈ ${f2(seF)} min`, "formula");
+  if (view.band) {
+    bracket(popMean - 2 * seF, popMean + 2 * seF, ROW.top, "br-se2", "±2 SE", "band");
+    bracket(popMean - seF, popMean + seF, ROW.mid, "br-se", "±1 SE", "band");
+  }
 }
 
-// ---------- Mini distributions ----------
-const MINI_MIN = 10, MINI_MAX = 90, MINI_BIN = 5;
+// ---------- Header above the chart ----------
+function drawHeader() {
+  const k = state.k, n = state.n;
+  let title, sub;
+  if (view.main === "empty") { title = "How long is the wait?"; sub = "average wait = ?"; }
+  else if (view.main === "sample") { title = "One sample of wait times"; sub = `n = ${n} customers · each dot is one customer`; }
+  else if (view.main === "axis") {
+    title = "How much does x̄ change from sample to sample?";
+    sub = `${k} sample${k === 1 ? "" : "s"} · n = ${n} customers each`;
+  }
+  else {
+    title = "Sampling distribution of the sample mean";
+    sub = `${k} sample${k === 1 ? "" : "s"} · n = ${n} customers each`;
+    if (view.formula && samples.length > 1) {
+      sub += ` · SD of x̄ = ${f2(sdev(samples.map(s => s.xbar)))} · σ/√n = ${f2(popSD / Math.sqrt(n))}`;
+    }
+  }
+  setXbar(document.getElementById("fig-title"), title);
+  setXbar(document.getElementById("fig-sub"), sub);
+}
 
-function drawCards() {
+// ---------- Strip of sample cards ----------
+const MINI_MIN = 2, MINI_MAX = 8, MINI_BIN = 0.5;
+
+function drawStrip() {
+  const keepScroll = resetStripScroll ? 0 : strip.scrollLeft;
+  resetStripScroll = false;
+  samplesEl.classList.toggle("off", !view.strip);
+  controls.classList.toggle("off", !view.controls);
+  controls.inert = !view.controls;
   strip.innerHTML = "";
-  // Cards keep their original "Sample k" number; only their order changes when sorted
+  samples.forEach(s => { s.card = null; });
+  if (!view.strip) return;
+
   const order = samples.map((_, i) => i);
   if (state.sorted) order.sort((a, b) => samples[a].xbar - samples[b].xbar);
   order.forEach(idx => {
     const sample = samples[idx];
     const card = document.createElement("div");
-    card.className = "card";
+    card.className = "card" + (view.focus === idx ? " hl" : "");
     card.innerHTML =
       `<p class="card-title">Sample ${idx + 1}</p>` +
       `<p class="card-meta">n = ${sample.values.length}</p>`;
@@ -366,16 +716,15 @@ function drawCards() {
 
     const w = 160, h = 90, mb = 14;
     const s = el("svg", { viewBox: `0 0 ${w} ${h}` }, card);
-    const nb = (MINI_MAX - MINI_MIN) / MINI_BIN;
+    const nb = Math.round((MINI_MAX - MINI_MIN) / MINI_BIN);
     const c = new Array(nb).fill(0);
     for (const x of sample.values) {
       const i = Math.floor((x - MINI_MIN) / MINI_BIN);
       if (i >= 0 && i < nb) c[i]++;
     }
-    const cmax = Math.max(...c);
+    const cmax = Math.max(1, ...c);
     const mx = x => (x - MINI_MIN) / (MINI_MAX - MINI_MIN) * w;
     const my = v => (h - mb) - v / cmax * (h - mb - 6);
-
     c.forEach((v, i) => {
       if (!v) return;
       const x0 = MINI_MIN + i * MINI_BIN;
@@ -383,7 +732,7 @@ function drawCards() {
                    height: my(0) - my(v), class: "bar" }, s);
     });
     el("line", { x1: 0, x2: w, y1: my(0), y2: my(0), stroke: "var(--muted)" }, s);
-    [30, 50, 70].forEach(v => {
+    [3, 5, 7].forEach(v => {
       el("text", { x: mx(v), y: h - 2, "text-anchor": "middle",
                    fill: "var(--muted)", "font-size": 9 }, s).textContent = v;
     });
@@ -395,113 +744,240 @@ function drawCards() {
     sample.card = card;
     sample.mini = s;
   });
+
+  strip.scrollLeft = keepScroll;
+
+  if (view.placeholder) {
+    const ph = document.createElement("div");
+    ph.className = "card placeholder";
+    ph.textContent = "?";
+    strip.appendChild(ph);
+  }
 }
 
-// ---------- Curves: visible card → bottom of its x̄ bin ----------
-function chartToScreen(x, y) {
-  const p = svg.createSVGPoint();
-  p.x = x; p.y = y;
-  return p.matrixTransform(svg.getScreenCTM());
-}
-
+// ---------- Curves: visible card → bottom of its x̄ bin, with the x̄ pill on the curve ----------
 function drawLinks() {
   links.innerHTML = "";
+  if (!view.strip || view.links === "none") return;
+  const fr = figure.getBoundingClientRect();
   const sr = strip.getBoundingClientRect();
-  const yAxis = M.top + ih;
+  const ctm = svg.getScreenCTM();
+  const toFig = (x, y) => {
+    const p = svg.createSVGPoint(); p.x = x; p.y = y;
+    const q = p.matrixTransform(ctm);
+    return [q.x - fr.left, q.y - fr.top];
+  };
+
   samples.forEach(s => {
-    const cr = s.card.getBoundingClientRect();
     s.link = null;
+    if (!s.card) return;
+    const cr = s.card.getBoundingClientRect();
     const mid = cr.left + cr.width / 2;
     if (mid < sr.left || mid > sr.right) return;  // card not visible in the strip
 
-    // Card end: right above the x̄ line inside the mini histogram
     const mr = s.mini.getBoundingClientRect();
-    const cx = mr.left + (s.xbar - MINI_MIN) / (MINI_MAX - MINI_MIN) * mr.width;
-
-    // Chart end: bottom of the x̄ bin, spread across the bin when several means share it
-    const x0 = X_MIN + s.bin * BIN_W;
-    const frac = (s.slot + 1) / (counts[s.bin] + 1);
-    const end = chartToScreen(sx(x0) + frac * (sx(x0 + BIN_W) - sx(x0)), yAxis);
-    const y2 = cr.top;
-    const dy = (y2 - end.y) / 2;
-    const P = [[end.x, end.y], [end.x, end.y + dy], [cx, y2 - dy], [cx, y2]];
-
+    const cx = mr.left + (s.xbar - MINI_MIN) / (MINI_MAX - MINI_MIN) * mr.width - fr.left;
+    const y2 = cr.top - fr.top;
     const g = el("g", {}, links);
-    el("path", {
-      d: `M ${P[0]} C ${P[1]}, ${P[2]}, ${P[3]}`
-    }, g);
-    el("circle", { cx: end.x, cy: end.y, r: 2.5 }, g);
+    if (view.focus != null) g.classList.add(s.i === view.focus ? "hl" : "dim");
+    s.link = g;
+    const label = `x̄ = ${f2(s.xbar)}`;
+    const compact = strip.classList.contains("compact");  // tiny cards: no room for labels
 
-    // x̄ label sitting on the curve, just above the card
+    if (view.links !== "curves" || s.bin == null) {  // pill only, just above the card
+      if (compact) el("circle", { cx, cy: y2 - 4, r: 2.5 }, g);
+      else pill(g, cx, y2 - 16, label);
+      return;
+    }
+    const counts = stats.counts;
+    const x0 = X_MIN + s.bin * MEAN_BIN;
+    const frac = (s.slot + 1) / (counts[s.bin] + 1);
+    const [ex, ey] = toFig(sx(x0) + frac * (sx(x0 + MEAN_BIN) - sx(x0)), axisY);
+    const dy = (y2 - ey) / 2;
+    const P = [[ex, ey], [ex, ey + dy], [cx, y2 - dy], [cx, y2]];
+    el("path", { d: `M ${P[0]} C ${P[1]}, ${P[2]}, ${P[3]}` }, g);
+    el("circle", { cx: ex, cy: ey, r: 2.5 }, g);
     const t = 0.86, u = 1 - t;
     const bz = i => u ** 3 * P[0][i] + 3 * u * u * t * P[1][i] + 3 * u * t * t * P[2][i] + t ** 3 * P[3][i];
-    const lx = bz(0), ly = bz(1);
-    const pill = el("g", { class: "pill" }, g);
-    const bg = el("rect", { rx: 9, ry: 9, height: 18 }, pill);
-    const txt = el("text", { x: lx, y: ly + 4, "text-anchor": "middle" }, pill);
-    setXbar(txt, `x̄ = ${s.xbar.toFixed(1)}`);
-    const tw = txt.getComputedTextLength() + 14;
-    bg.setAttribute("x", lx - tw / 2);
-    bg.setAttribute("y", ly - 9);
-    bg.setAttribute("width", tw);
-    s.link = g;
+    if (!compact) pill(g, bz(0), bz(1), label);
   });
+  if (fresh.has("links")) {
+    links.classList.remove("fade-in"); void links.getBoundingClientRect(); links.classList.add("fade-in");
+  }
 }
 
 function highlight(i, on) {
   const s = samples[i];
-  s.card.classList.toggle("hl", on);
-  barEls[s.bin].classList.toggle("hl", on);
+  if (!s || (!on && view.focus === i)) return;
+  if (s.card) s.card.classList.toggle("hl", on);
+  if (s.bin != null && barEls[s.bin]) barEls[s.bin].classList.toggle("hl", on);
   if (s.link) {
     s.link.classList.toggle("hl", on);
     if (on) links.appendChild(s.link);  // bring to front
   }
 }
 
-let raf = 0;
-const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(drawLinks); };
-strip.addEventListener("scroll", schedule, { passive: true });
-window.addEventListener("scroll", schedule, { passive: true });
-window.addEventListener("resize", schedule);
+// ---------- Render ----------
+function render() {
+  samples = makeSamples(state.k, state.n, state.seed);
+  drawHeader();
+  drawMain();
+  drawStrip();
+  drawLinks();
+  syncControls();
+  fresh.clear();
+}
+function redraw() { drawMain(); drawLinks(); }
 
-// ---------- Buttons ----------
+// ---------- Moving between steps ----------
+let current = -1, tween = 0, dropTimer = 0, demoTimer = 0, demoRaf = 0;
+function cancelAnims() {
+  cancelAnimationFrame(tween); clearTimeout(dropTimer); tween = 0;
+  clearTimeout(demoTimer); cancelAnimationFrame(demoRaf);
+  strip.style.scrollSnapType = "";
+}
+
+// Show that the strip scrolls: glide to the last card, pause, then glide back.
+// Snapping is switched off meanwhile, so the strip moves smoothly instead of jumping card to card.
+function demoStripScroll() {
+  const ease = p => p < .5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
+  const glide = (from, to, dur, done) => {
+    const t0 = performance.now();
+    const frame = now => {
+      const p = Math.min(1, (now - t0) / dur);
+      strip.scrollLeft = from + (to - from) * ease(p);
+      if (p < 1) demoRaf = requestAnimationFrame(frame); else done();
+    };
+    demoRaf = requestAnimationFrame(frame);
+  };
+  const end = strip.scrollWidth - strip.clientWidth;
+  if (end <= 0) return;
+  strip.style.scrollSnapType = "none";
+  glide(0, end, 1800, () => {
+    demoTimer = setTimeout(() => glide(end, 0, 1200, () => { strip.style.scrollSnapType = ""; }), 600);
+  });
+}
+
+function goTo(i, dir = "down") {
+  if (i === current) return;
+  current = i;
+  cancelAnims();
+  const prev = view;
+  view = { ...DEFAULTS, ...STEPS[i] };
+  fresh = new Set(["xbar", "mu", "se", "sigma", "formula", "band"].filter(f => view[f] && !prev[f]));
+  if (view.main !== prev.main) fresh.add("main");
+  if (view.links !== prev.links) fresh.add("links");
+  if (!view.sandbox) { state.seed = BASE_SEED; state.sorted = false; syncSort(); }
+  resetStripScroll = true;
+
+  state.reveal = view.anim === "drop" && dir === "down" && !reducedMotion ? 0 : Infinity;
+  if (state.k !== view.k || state.n !== view.n) {
+    animateTo(view.k, view.n, reducedMotion ? 0 : dir === "down" ? view.dur : 500);
+  } else {
+    render();
+  }
+  if (state.reveal === 0) runDrop();
+  // Start once the new cards have arrived (after the k animation)
+  if (view.demoScroll && dir === "down" && !reducedMotion) demoTimer = setTimeout(demoStripScroll, view.dur + 400);
+  setCompact(view.compact);
+}
+
+// Shrink the cards so every sample (and its curve) fits at once, or grow them back.
+// The number of visible cards is tweened, so the cards visibly squeeze together.
+let visRaf = 0, compactOn = false;
+function setCompact(on) {
+  if (on === compactOn) return;
+  compactOn = on;
+  cancelAnimationFrame(visRaf);
+  const cur = parseFloat(getComputedStyle(strip).getPropertyValue("--visible"));
+  strip.style.removeProperty("--visible");
+  const normal = parseFloat(getComputedStyle(strip).getPropertyValue("--visible"));
+  const target = on ? Math.max(normal, state.k) : normal;
+  strip.style.setProperty("--visible", cur);
+  if (on) strip.classList.add("compact");
+  const t0 = performance.now(), dur = reducedMotion ? 0 : 700;
+  const frame = now => {
+    const p = dur ? Math.min(1, (now - t0) / dur) : 1;
+    const e = 1 - (1 - p) ** 3;
+    strip.style.setProperty("--visible", cur + (target - cur) * e);
+    drawLinks();
+    if (p < 1) { visRaf = requestAnimationFrame(frame); return; }
+    if (!on) { strip.style.removeProperty("--visible"); strip.classList.remove("compact"); drawLinks(); }
+  };
+  visRaf = requestAnimationFrame(frame);
+}
+
+// Smoothly change k and n (n moves on a log scale so 5 → 30 → 100 feels even)
+function animateTo(k, n, dur) {
+  const k0 = state.k, n0 = state.n, t0 = performance.now();
+  const ease = p => p < .5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
+  const frame = now => {
+    const p = dur ? Math.min(1, (now - t0) / dur) : 1, e = ease(p);
+    const kk = Math.round(k0 + (k - k0) * e);
+    const nn = Math.round(Math.exp(Math.log(n0) + (Math.log(n) - Math.log(n0)) * e));
+    if (kk !== state.k || nn !== state.n || p === 1) {
+      state.k = p === 1 ? k : kk; state.n = p === 1 ? n : nn;
+      render();
+    }
+    if (p < 1) tween = requestAnimationFrame(frame);
+  };
+  tween = requestAnimationFrame(frame);
+}
+
+// Means drop into the histogram one by one: slowly for the visible cards, then faster
+function runDrop() {
+  const total = state.k;
+  const tick = () => {
+    state.reveal++;
+    redraw();
+    if (state.reveal < total) dropTimer = setTimeout(tick, state.reveal < 4 ? 450 : 90);
+    else state.reveal = Infinity;
+  };
+  dropTimer = setTimeout(tick, 350);
+}
+
+// ---------- Sandbox controls ----------
+const syncs = [];
+function syncControls() { syncs.forEach(f => f()); }
+
 // Click to step by 1; press and hold to keep stepping, faster the longer you hold.
 function makeStepper(id, key) {
   const box = document.getElementById(id);
   const input = box.querySelector("input");
   const [minus, plus] = box.querySelectorAll("button");
   const sync = () => {
-    input.value = state[key];
+    if (document.activeElement !== input) input.value = state[key];
     minus.disabled = state[key] <= LIMITS[key][0];
     plus.disabled = state[key] >= LIMITS[key][1];
   };
+  syncs.push(sync);
   const step = d => {
     const v = Math.min(LIMITS[key][1], Math.max(LIMITS[key][0], state[key] + d));
     if (v === state[key]) return false;
-    state[key] = v; sync(); render();
+    state[key] = v; render();
     return true;
   };
   // Typing: apply on Enter or when the field loses focus; clamp to the limits,
   // revert on anything that isn't a number. Arrow keys step by 1 (Shift: by 10).
   const commit = () => {
     const v = parseInt(input.value, 10);
-    if (Number.isNaN(v)) return sync();
-    const c = Math.min(LIMITS[key][1], Math.max(LIMITS[key][0], v));
-    if (c !== state[key]) { state[key] = c; render(); }
-    sync();
+    if (!Number.isNaN(v)) {
+      const c = Math.min(LIMITS[key][1], Math.max(LIMITS[key][0], v));
+      if (c !== state[key]) { state[key] = c; render(); }
+    }
+    input.value = state[key];
   };
   input.addEventListener("focus", () => input.select());
   input.addEventListener("blur", commit);
   input.addEventListener("keydown", e => {
     if (e.key === "Enter") { commit(); input.select(); }
-    else if (e.key === "Escape") { sync(); input.blur(); }
+    else if (e.key === "Escape") { input.value = state[key]; input.blur(); }
     else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
       step((e.key === "ArrowUp" ? 1 : -1) * (e.shiftKey ? 10 : 1));
-      input.select();
+      input.value = state[key]; input.select();
     }
   });
-
   [minus, plus].forEach(b => {
     const d = Number(b.dataset.d);
     let timer = null;
@@ -518,7 +994,7 @@ function makeStepper(id, key) {
       timer = setTimeout(repeat, delay);
     });
     ["pointerup", "pointerleave", "pointercancel"].forEach(ev => b.addEventListener(ev, stop));
-    b.addEventListener("keydown", e => {  // keyboard: Enter / Space
+    b.addEventListener("keydown", e => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); step(d); }
     });
   });
@@ -528,16 +1004,46 @@ makeStepper("step-k", "k");
 makeStepper("step-n", "n");
 
 const sortBtn = document.getElementById("sort");
+function syncSort() { sortBtn.setAttribute("aria-checked", state.sorted); }
 sortBtn.addEventListener("click", () => {
   state.sorted = !state.sorted;
-  sortBtn.setAttribute("aria-checked", state.sorted);
-  drawCards();          // same samples, new order
+  syncSort();
+  drawStrip();
   strip.scrollLeft = 0;
   drawLinks();
 });
 document.getElementById("resample").addEventListener("click", () => { state.seed++; render(); });
 
-render();
+// ---------- Keep curves and chart in sync with layout changes ----------
+let raf = 0;
+const schedule = fn => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fn); };
+strip.addEventListener("scroll", () => schedule(drawLinks), { passive: true });
+window.addEventListener("scroll", () => schedule(drawLinks), { passive: true });
+new ResizeObserver(() => schedule(redraw)).observe(chartWrap);
+
+// ---------- Scrollama: each step entering the middle of the screen updates the figure ----------
+const stepEls = [...document.querySelectorAll(".step")];
+function onStep(i, dir) {
+  stepEls.forEach((s, j) => s.classList.toggle("is-active", j === i));
+  goTo(i, dir);
+}
+if (window.scrollama) {
+  const scroller = scrollama();
+  scroller.setup({ step: ".step", offset: 0.55 })
+    .onStepEnter(({ index, direction }) => onStep(index, direction));
+  window.addEventListener("resize", () => scroller.resize());
+} else {
+  // Fallback if the Scrollama script couldn't load
+  let last = -1;
+  const io = new IntersectionObserver(entries => entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const i = stepEls.indexOf(e.target);
+    onStep(i, i > last ? "down" : "up");
+    last = i;
+  }), { rootMargin: "-45% 0px -45% 0px" });
+  stepEls.forEach(s => io.observe(s));
+}
+goTo(0);
 </script>
 </body>
 </html>
