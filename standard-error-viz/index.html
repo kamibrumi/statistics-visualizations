@@ -137,6 +137,20 @@
   }
   @media (max-width: 1200px) { .strip { --visible: 4; } }
   @media (max-width: 900px) { .strip { --visible: 3; } }
+  /* ‹ › buttons over the ends of the strip, for scrolling without a trackpad */
+  .strip-wrap { position: relative; }
+  .strip:focus-visible { outline: 2px solid var(--bar); outline-offset: 3px; border-radius: 8px; }
+  .strip-arrow {
+    position: absolute; top: calc(50% - 4px); transform: translateY(-50%); z-index: 2;
+    width: 32px; height: 32px; border-radius: 50%; padding: 0 0 3px;
+    font: inherit; font-size: 1.4rem; line-height: 1; color: var(--ink); cursor: pointer;
+    border: 1px solid var(--grid); background: var(--card);
+    box-shadow: 0 2px 8px rgb(0 0 0 / .18); transition: opacity .2s, border-color .15s;
+  }
+  .strip-arrow:hover { border-color: var(--muted); }
+  .strip-arrow.prev { left: -6px; }
+  .strip-arrow.next { right: -6px; }
+  .strip-arrow:disabled { opacity: 0; pointer-events: none; }
   .card {
     scroll-snap-align: start;
     border: 1px solid var(--grid);
@@ -295,7 +309,7 @@
     <!-- Act 3: the distribution of the sample means -->
     <section class="step"><div class="step-card">
       <p>Imagine repeating this <b>20 times</b>: 20 samples of 30 customers, each with its own mean.</p>
-      <p>(Scroll the strip sideways to see them all.)</p>
+      <p>(Use the ‹ › arrows, or scroll the strip sideways, to see them all.)</p>
     </div></section>
 
     <section class="step"><div class="step-card">
@@ -366,7 +380,12 @@
       <svg id="chart" role="img" aria-label="Chart for the current step of the story"></svg>
     </div>
     <section class="samples off" id="samples">
-      <div class="strip" id="strip"></div>
+      <div class="strip-wrap">
+        <div class="strip" id="strip" tabindex="0" role="region"
+             aria-label="Sample cards. Use the left and right arrow keys to scroll."></div>
+        <button type="button" class="strip-arrow prev" id="strip-prev" aria-label="Show previous samples">‹</button>
+        <button type="button" class="strip-arrow next" id="strip-next" aria-label="Show more samples">›</button>
+      </div>
       <div class="samples-head">
         <h3>Samples from the population</h3>
         <div class="controls off" id="controls">
@@ -780,6 +799,7 @@ function drawStrip() {
   });
 
   strip.scrollLeft = keepScroll;
+  updateStripArrows();
 
   if (view.placeholder) {
     const ph = document.createElement("div");
@@ -1051,7 +1071,32 @@ document.getElementById("resample").addEventListener("click", () => { state.seed
 // ---------- Keep curves and chart in sync with layout changes ----------
 let raf = 0;
 const schedule = fn => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fn); };
-strip.addEventListener("scroll", () => schedule(drawLinks), { passive: true });
+strip.addEventListener("scroll", () => { schedule(drawLinks); updateStripArrows(); }, { passive: true });
+new ResizeObserver(updateStripArrows).observe(strip);
+
+// ---------- Scrolling the strip without a trackpad: ‹ › buttons and arrow keys ----------
+const prevBtn = document.getElementById("strip-prev");
+const nextBtn = document.getElementById("strip-next");
+function updateStripArrows() {
+  const max = strip.scrollWidth - strip.clientWidth;
+  prevBtn.disabled = strip.scrollLeft <= 1;
+  nextBtn.disabled = strip.scrollLeft >= max - 1;
+}
+// Move by whole cards (one card + gap per step)
+function scrollStrip(cards) {
+  const card = strip.querySelector(".card");
+  if (!card) return;
+  const gap = parseFloat(getComputedStyle(strip).columnGap) || 0;
+  strip.scrollBy({ left: cards * (card.getBoundingClientRect().width + gap), behavior: reducedMotion ? "auto" : "smooth" });
+}
+prevBtn.addEventListener("click", () => scrollStrip(-1));
+nextBtn.addEventListener("click", () => scrollStrip(1));
+strip.addEventListener("keydown", e => {
+  const moves = { ArrowLeft: -1, ArrowRight: 1, PageUp: -4, PageDown: 4 };
+  if (e.key in moves) { e.preventDefault(); scrollStrip(moves[e.key]); }
+  else if (e.key === "Home") { e.preventDefault(); strip.scrollTo({ left: 0, behavior: "smooth" }); }
+  else if (e.key === "End") { e.preventDefault(); strip.scrollTo({ left: strip.scrollWidth, behavior: "smooth" }); }
+});
 window.addEventListener("scroll", () => schedule(drawLinks), { passive: true });
 new ResizeObserver(() => schedule(redraw)).observe(chartWrap);
 
