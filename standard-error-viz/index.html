@@ -17,25 +17,28 @@
     --xbar: #0d9488;
     --formula: #0284c7;
     --sigma: #c026d3;
+    --n: #65a30d;
     --card: #ffffff;
     /* Same hues for the story text, a shade darker so they're readable on the light page */
-    --t-mean: #be123c; --t-sd: #b45309; --t-xbar: #0f766e; --t-formula: #0369a1; --t-sigma: #a21caf;
+    --t-mean: #be123c; --t-sd: #b45309; --t-xbar: #0f766e; --t-formula: #0369a1; --t-sigma: #a21caf; --t-n: #4d7c0f; --t-k: #4338ca;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #0c0a09; --ink: #f5f5f4; --muted: #a8a29e; --grid: #292524;
       --bar: #818cf8; --bar-hover: #a5b4fc; --mean: #fb7185; --sd: #fbbf24;
-      --xbar: #2dd4bf; --formula: #38bdf8; --sigma: #e879f9; --card: #1c1917;
-      --t-mean: #fb7185; --t-sd: #fbbf24; --t-xbar: #2dd4bf; --t-formula: #38bdf8; --t-sigma: #e879f9;
+      --xbar: #2dd4bf; --formula: #38bdf8; --sigma: #e879f9; --n: #a3e635; --card: #1c1917;
+      --t-mean: #fb7185; --t-sd: #fbbf24; --t-xbar: #2dd4bf; --t-formula: #38bdf8; --t-sigma: #e879f9; --t-n: #a3e635; --t-k: #a5b4fc;
     }
   }
   /* Color-coded terms in the story, matching their marks in the chart */
-  .c-mu, .c-se, .c-xbar, .c-formula, .c-sigma { font-weight: 650; }
+  .c-mu, .c-se, .c-xbar, .c-formula, .c-sigma, .c-n, .c-k { font-weight: 650; }
   .c-mu { color: var(--t-mean); }
   .c-se { color: var(--t-sd); }
   .c-xbar { color: var(--t-xbar); }
   .c-formula { color: var(--t-formula); }
   .c-sigma { color: var(--t-sigma); }
+  .c-n { color: var(--t-n); }
+  .c-k { color: var(--t-k); }   /* number of samples: the indigo of the bars it counts */
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
@@ -86,6 +89,7 @@
   .fig-head { text-align: center; }
   .fig-head h2 { font-size: 1.1rem; font-weight: 600; margin: 0 0 2px; }
   .fig-sub { color: var(--muted); font-size: 0.85rem; margin: 0; min-height: 1.4em; }
+  .fig-sub span { white-space: nowrap; }   /* keep each colored piece on one line when it wraps */
   .chart-wrap { flex: 1; min-height: 0; position: relative; margin-top: 8px; }
   #chart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
   .fade-in { animation: fade-in .5s ease both; }
@@ -209,6 +213,11 @@
   .controls.off { opacity: 0; pointer-events: none; }
   .stepper { display: inline-flex; align-items: center; gap: 2px; font-size: 0.85rem; }
   .stepper-label { color: var(--muted); margin-right: 4px; }
+  .stepper-label.c-k { color: var(--t-k); }   /* labels take their concept's color */
+  .stepper-label.c-n { color: var(--t-n); }
+  /* the values in the steppers take their concept's color too */
+  #step-k input { color: var(--t-k); }
+  #step-n input { color: var(--t-n); }
   .stepper input {
     font: inherit; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink);
     width: 4ch; text-align: center; padding: 2px 0;
@@ -286,7 +295,7 @@
 
     <section class="step"><div class="step-card">
       <p>They time <b>30 customers</b>. Each dot is one customer's wait.</p>
-      <p>The number of observations in a sample is called <b>n</b>, so here <b>n = 30</b>. Some customers wait a short time, others much longer.</p>
+      <p>The number of observations in a sample is called <span class="c-n">n</span>, so here <span class="c-n">n = 30</span>. Some customers wait a short time, others much longer.</p>
     </div></section>
 
     <section class="step"><div class="step-card">
@@ -308,7 +317,7 @@
 
     <!-- Act 3: the distribution of the sample means -->
     <section class="step"><div class="step-card">
-      <p>Imagine repeating this <b>20 times</b>: 20 samples of 30 customers, each with its own mean.</p>
+      <p>Imagine repeating this <b>20 times</b>: <span class="c-k">20 samples</span> of 30 customers, each with its own mean.</p>
       <p>(Use the ‹ › arrows, or scroll the strip sideways, to see them all.)</p>
     </div></section>
 
@@ -332,27 +341,27 @@
     <section class="step"><div class="step-card">
       <p>Statisticians have a shortcut:</p>
       <p><span class="c-formula">SE = σ / √n = 1 / √30 ≈ <span class="num" data-v="seF"></span> min</span></p>
-      <p>Instead of drawing many samples, it predicts the standard error from just two numbers: <span class="c-sigma">σ</span>, how much individual waits vary (1 min), and <b>n</b>, how many customers are in each sample (30). Dividing by √n captures that averaging more customers cancels out more of the ups and downs.</p>
+      <p>Instead of drawing many samples, it predicts the standard error from just two numbers: <span class="c-sigma">σ</span>, how much individual waits vary (1 min), and <span class="c-n">n</span>, how many customers are in each sample (30). Dividing by √n captures that averaging more customers cancels out more of the ups and downs.</p>
       <p>That's close to what we measured (<span class="c-se num" data-v="sd20"></span>), but not quite the same. Why?</p>
     </div></section>
 
     <section class="step"><div class="step-card">
-      <p>With only 20 samples, our pile is a rough sketch. Let's draw <b>more samples</b>: 50, 100, 200…</p>
+      <p>With only 20 samples, our pile is a rough sketch. Let's draw <span class="c-k">more samples</span>: 50, 100, 200…</p>
       <p>The pile fills into a smooth bell, and the measured spread settles at <span class="c-se">≈ <span class="num" data-v="sd200"></span> min</span>, matching <span class="c-formula">the formula</span>.</p>
       <p>More samples didn't change the <span class="c-se">standard error</span>. They gave us a <b>more precise measurement</b> of it.</p>
     </div></section>
 
     <section class="step"><div class="step-card">
       <p>What if each sample had more customers?</p>
-      <p>With only <b>n = 5</b> customers per sample, the means are widely spread: <span class="c-se">SE ≈ <span class="num" data-v="se5"></span> min</span> (≈ <span class="num" data-v="se5s"></span> s).</p>
+      <p>With only <span class="c-n">n = 5</span> customers per sample, the means are widely spread: <span class="c-se">SE ≈ <span class="num" data-v="se5"></span> min</span> (≈ <span class="num" data-v="se5s"></span> s).</p>
     </div></section>
 
     <section class="step"><div class="step-card">
-      <p>With <b>n = 30</b>: <span class="c-se">SE ≈ <span class="num" data-v="se30"></span> min</span> (≈ <span class="num" data-v="se30s"></span> s).</p>
+      <p>With <span class="c-n">n = 30</span>: <span class="c-se">SE ≈ <span class="num" data-v="se30"></span> min</span> (≈ <span class="num" data-v="se30s"></span> s).</p>
     </div></section>
 
     <section class="step"><div class="step-card">
-      <p>With <b>n = 100</b>: <span class="c-se">SE ≈ <span class="num" data-v="se100"></span> min</span> (≈ <span class="num" data-v="se100s"></span> s).</p>
+      <p>With <span class="c-n">n = 100</span>: <span class="c-se">SE ≈ <span class="num" data-v="se100"></span> min</span> (≈ <span class="num" data-v="se100s"></span> s).</p>
       <p><b>Bigger samples give more reliable means.</b> But because of the square root, timing <b>4× as many customers only halves the <span class="c-se">SE</span></b>.</p>
     </div></section>
 
@@ -364,7 +373,7 @@
     </div></section>
 
     <section class="step"><div class="step-card">
-      <p><b>Your turn.</b> Change the number of samples and n under the sample cards, and watch the <span class="c-se">standard error</span> change.</p>
+      <p><b>Your turn.</b> Change the <span class="c-k">number of samples</span> and <span class="c-n">n</span> under the sample cards, and watch the <span class="c-se">standard error</span> change.</p>
       <p>Hover a card to follow its mean, or sort the cards by <span class="c-xbar"><span class="xbar">x</span></span>.</p>
     </div></section>
 
@@ -390,23 +399,23 @@
         <h3>Samples from the population</h3>
         <div class="controls off" id="controls">
           <div class="stepper control-box" id="step-k" role="group" aria-label="Number of samples">
-            <span class="stepper-label">number of samples</span>
+            <span class="stepper-label c-k">number of samples</span>
             <button type="button" data-d="-1" aria-label="Fewer samples">−</button>
             <input type="text" inputmode="numeric" aria-label="Number of samples">
             <button type="button" data-d="1" aria-label="More samples">+</button>
           </div>
           <div class="stepper control-box" id="step-n" role="group" aria-label="Sample size n">
-            <span class="stepper-label">n</span>
+            <span class="stepper-label c-n">n</span>
             <button type="button" data-d="-1" aria-label="Smaller samples">−</button>
             <input type="text" inputmode="numeric" aria-label="Sample size n">
             <button type="button" data-d="1" aria-label="Larger samples">+</button>
           </div>
           <button type="button" class="switch control-box" id="sort" role="switch" aria-checked="false" title="Order the cards by their mean">
-            <span class="switch-label">sort by <span class="xbar">x</span></span>
+            <span class="switch-label">sort by <span class="c-xbar"><span class="xbar">x</span></span></span>
             <span class="track"><span class="knob"></span></span>
           </button>
           <button type="button" class="action control-box" id="resample" title="Draw a fresh set of samples">
-            <span class="action-icon" aria-hidden="true">↻</span> new samples
+            <span class="action-icon" aria-hidden="true">↻</span> new <span class="c-k">samples</span>
           </button>
         </div>
       </div>
@@ -449,6 +458,7 @@ function setXbar(node, str) {
     if (part) node.appendChild(document.createTextNode(part));
   });
 }
+
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
@@ -725,22 +735,35 @@ function drawMain() {
 // ---------- Header above the chart ----------
 function drawHeader() {
   const k = state.k, n = state.n;
-  let title, sub;
-  if (view.main === "empty") { title = "How long is the wait?"; sub = "average wait = ?"; }
-  else if (view.main === "sample") { title = "One sample of wait times"; sub = `n = ${n} customers · each dot is one customer`; }
-  else if (view.main === "axis") {
-    title = "How much does x̄ change from sample to sample?";
-    sub = `${k} sample${k === 1 ? "" : "s"} · n = ${n} customers each`;
+  // The subtitle is a list of [text, color class] pieces, so each concept keeps its color:
+  // number of samples (indigo, like the bars it counts), n (lime), SE (amber), formula (blue)
+  const samplesPart = [`${k} sample${k === 1 ? "" : "s"}`, "c-k"];
+  const nPart = [`n = ${n}`, "c-n"];
+  let title, parts;
+  if (view.main === "empty") { title = "How long is the wait?"; parts = [["average wait = ?"]]; }
+  else if (view.main === "sample") {
+    title = "One sample of wait times";
+    parts = [nPart, [" customers · each dot is one customer"]];
   }
   else {
-    title = "Sampling distribution of the sample mean";
-    sub = `${k} sample${k === 1 ? "" : "s"} · n = ${n} customers each`;
-    if (view.formula && samples.length > 1) {
-      sub += ` · SD of x̄ = ${f2(sdev(samples.map(s => s.xbar)))} · σ/√n = ${f2(popSD / Math.sqrt(n))}`;
+    title = view.main === "axis" ? "How much does x̄ change from sample to sample?"
+                                 : "Sampling distribution of the sample mean";
+    parts = [samplesPart, [" · "], nPart, [" customers each"]];
+    if (view.main === "means" && view.formula && samples.length > 1) {
+      parts.push([" · "], [`SD of x̄ = ${f2(sdev(samples.map(s => s.xbar)))}`, "c-se"],
+                 [" · "], [`σ/√n = ${f2(popSD / Math.sqrt(n))}`, "c-formula"]);
     }
   }
   setXbar(document.getElementById("fig-title"), title);
-  setXbar(document.getElementById("fig-sub"), sub);
+  const subEl = document.getElementById("fig-sub");
+  subEl.textContent = "";
+  parts.forEach(([text, cls]) => {
+    if (!cls) { subEl.appendChild(document.createTextNode(text)); return; }
+    const sp = document.createElement("span");
+    sp.className = cls;
+    setXbar(sp, text);
+    subEl.appendChild(sp);
+  });
 }
 
 // ---------- Strip of sample cards ----------
@@ -764,7 +787,7 @@ function drawStrip() {
     card.className = "card" + (view.focus === idx ? " hl" : "");
     card.innerHTML =
       `<p class="card-title">Sample ${idx + 1}</p>` +
-      `<p class="card-meta">n = ${sample.values.length}</p>`;
+      `<p class="card-meta"><span class="c-n">n = ${sample.values.length}</span></p>`;
     strip.appendChild(card);
 
     const w = 160, h = 90, mb = 14;
