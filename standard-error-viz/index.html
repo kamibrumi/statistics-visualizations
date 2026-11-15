@@ -15,15 +15,27 @@
     --mean: #e11d48;
     --sd: #f59e0b;
     --xbar: #0d9488;
+    --formula: #0284c7;
+    --sigma: #c026d3;
     --card: #ffffff;
+    /* Same hues for the story text, a shade darker so they're readable on the light page */
+    --t-mean: #be123c; --t-sd: #b45309; --t-xbar: #0f766e; --t-formula: #0369a1; --t-sigma: #a21caf;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #0c0a09; --ink: #f5f5f4; --muted: #a8a29e; --grid: #292524;
       --bar: #818cf8; --bar-hover: #a5b4fc; --mean: #fb7185; --sd: #fbbf24;
-      --xbar: #2dd4bf; --card: #1c1917;
+      --xbar: #2dd4bf; --formula: #38bdf8; --sigma: #e879f9; --card: #1c1917;
+      --t-mean: #fb7185; --t-sd: #fbbf24; --t-xbar: #2dd4bf; --t-formula: #38bdf8; --t-sigma: #e879f9;
     }
   }
+  /* Color-coded terms in the story, matching their marks in the chart */
+  .c-mu, .c-se, .c-xbar, .c-formula, .c-sigma { font-weight: 650; }
+  .c-mu { color: var(--t-mean); }
+  .c-se { color: var(--t-sd); }
+  .c-xbar { color: var(--t-xbar); }
+  .c-formula { color: var(--t-formula); }
+  .c-sigma { color: var(--t-sigma); }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
@@ -83,10 +95,10 @@
   .br text { font-size: 12.5px; font-weight: 600; }
   .br-se line { stroke: var(--sd); }
   .br-se text { fill: var(--sd); }
-  .br-formula line { stroke: var(--sd); stroke-dasharray: 4 3; }
-  .br-formula text { fill: var(--sd); font-weight: 500; }
-  .br-sigma line { stroke: var(--muted); opacity: .6; }
-  .br-sigma text { fill: var(--muted); font-weight: 500; }
+  .br-formula line { stroke: var(--formula); stroke-dasharray: 4 3; }
+  .br-formula text { fill: var(--formula); }
+  .br-sigma line { stroke: var(--sigma); }
+  .br-sigma text { fill: var(--sigma); }
   .br-se2 line { stroke: var(--sd); opacity: .5; }
   .br-se2 text { fill: var(--sd); opacity: .75; }
   .band { fill: var(--sd); }
@@ -249,19 +261,19 @@
     </div></section>
 
     <section class="step"><div class="step-card">
-      <p>Averaging the 30 waits gives the <b>sample mean</b>, written <span class="xbar">x</span>:</p>
-      <p><b><span class="xbar">x</span> = <span class="num" data-v="xbar1"></span> min</b></p>
-      <p>It's our best guess for the true average wait, <b>μ</b> (“mu”), which we don't know.</p>
+      <p>Averaging the 30 waits gives the <b>sample mean</b>, written <span class="c-xbar"><span class="xbar">x</span></span>:</p>
+      <p><span class="c-xbar"><span class="xbar">x</span> = <span class="num" data-v="xbar1"></span> min</span></p>
+      <p>It's our best guess for the true average wait, <span class="c-mu">μ</span> (“mu”), which we don't know.</p>
     </div></section>
 
     <!-- Act 2: why one mean isn't enough -->
     <section class="step"><div class="step-card">
-      <p>How much should we trust <span class="num" data-v="xbar1"></span>? If they had timed a <i>different</i> 30 customers, would they get <span class="num" data-v="xbar1"></span> again? Almost certainly not.</p>
-      <p><b><span class="xbar">x</span> depends on which customers happened to be in the sample.</b> To know how far off our guess might be, we need to know how much <span class="xbar">x</span> changes from sample to sample.</p>
+      <p>How much should we trust <span class="c-xbar num" data-v="xbar1"></span>? If they had timed a <i>different</i> 30 customers, would they get <span class="c-xbar num" data-v="xbar1"></span> again? Almost certainly not.</p>
+      <p><b><span class="c-xbar"><span class="xbar">x</span></span> depends on which customers happened to be in the sample.</b> To know how far off our guess might be, we need to know how much <span class="c-xbar"><span class="xbar">x</span></span> changes from sample to sample.</p>
     </div></section>
 
     <section class="step"><div class="step-card">
-      <p>Another 30 customers: <b><span class="xbar">x</span> = <span class="num" data-v="xbar2"></span> min</b>.</p>
+      <p>Another 30 customers: <span class="c-xbar"><span class="xbar">x</span> = <span class="num" data-v="xbar2"></span> min</span>.</p>
       <p>Same shop, same process, a different answer. The sample mean is itself <b>random</b>.</p>
     </div></section>
 
@@ -273,58 +285,58 @@
 
     <section class="step"><div class="step-card">
       <p>Now keep only the means and stack them up.</p>
-      <p>This pile is the <b>sampling distribution of the sample mean</b>: the values <span class="xbar">x</span> tends to take.</p>
+      <p>This pile is the <b>sampling distribution of the sample mean</b>: the values <span class="c-xbar"><span class="xbar">x</span></span> tends to take.</p>
     </div></section>
 
     <section class="step"><div class="step-card">
-      <p>The means cluster around the true average, <b>μ = 5 min</b>.</p>
+      <p>The means cluster around the true average, <span class="c-mu">μ = 5 min</span>.</p>
       <p>Single samples miss, but not consistently too high or too low.</p>
     </div></section>
 
     <!-- Act 4: the standard error -->
     <section class="step"><div class="step-card">
-      <p>How spread out are the means? Their standard deviation is about <b><span class="num" data-v="sd20"></span> min</b> (≈ <span class="num" data-v="sd20s"></span> s).</p>
-      <p>That's the <b>standard error (SE)</b>: how far a typical sample mean lands from the truth.</p>
-      <p>Compare it with individual customers, whose waits vary by about <b>σ = 1 min</b> (the faint grey bracket). <b>Averages vary much less than individuals.</b></p>
+      <p>How spread out are the means? Their standard deviation is about <span class="c-se"><span class="num" data-v="sd20"></span> min</span> (≈ <span class="num" data-v="sd20s"></span> s).</p>
+      <p>That's the <span class="c-se">standard error (SE)</span>: how far a typical sample mean lands from the truth.</p>
+      <p>Compare it with individual customers, whose waits vary by about <span class="c-sigma">σ = 1 min</span> (the magenta bracket). <b>Averages vary much less than individuals.</b></p>
     </div></section>
 
     <section class="step"><div class="step-card">
       <p>Statisticians have a shortcut:</p>
-      <p><b>SE = σ / √n = 1 / √30 ≈ <span class="num" data-v="seF"></span> min</b></p>
-      <p>Instead of drawing many samples, it predicts the standard error from just two numbers: <b>σ</b>, how much individual waits vary (1 min), and <b>n</b>, how many customers are in each sample (30). Dividing by √n captures that averaging more customers cancels out more of the ups and downs.</p>
-      <p>That's close to what we measured (<span class="num" data-v="sd20"></span>), but not quite the same. Why?</p>
+      <p><span class="c-formula">SE = σ / √n = 1 / √30 ≈ <span class="num" data-v="seF"></span> min</span></p>
+      <p>Instead of drawing many samples, it predicts the standard error from just two numbers: <span class="c-sigma">σ</span>, how much individual waits vary (1 min), and <b>n</b>, how many customers are in each sample (30). Dividing by √n captures that averaging more customers cancels out more of the ups and downs.</p>
+      <p>That's close to what we measured (<span class="c-se num" data-v="sd20"></span>), but not quite the same. Why?</p>
     </div></section>
 
     <section class="step"><div class="step-card">
       <p>With only 20 samples, our pile is a rough sketch. Let's draw <b>more samples</b>: 50, 100, 200…</p>
-      <p>The pile fills into a smooth bell, and the measured spread settles at <b>≈ <span class="num" data-v="sd200"></span> min</b>, matching the formula.</p>
-      <p>More samples didn't change the standard error. They gave us a <b>more precise measurement</b> of it.</p>
+      <p>The pile fills into a smooth bell, and the measured spread settles at <span class="c-se">≈ <span class="num" data-v="sd200"></span> min</span>, matching <span class="c-formula">the formula</span>.</p>
+      <p>More samples didn't change the <span class="c-se">standard error</span>. They gave us a <b>more precise measurement</b> of it.</p>
     </div></section>
 
     <section class="step"><div class="step-card">
       <p>What if each sample had more customers?</p>
-      <p>With only <b>n = 5</b> customers per sample, the means are widely spread: <b>SE ≈ <span class="num" data-v="se5"></span> min</b> (≈ <span class="num" data-v="se5s"></span> s).</p>
+      <p>With only <b>n = 5</b> customers per sample, the means are widely spread: <span class="c-se">SE ≈ <span class="num" data-v="se5"></span> min</span> (≈ <span class="num" data-v="se5s"></span> s).</p>
     </div></section>
 
     <section class="step"><div class="step-card">
-      <p>With <b>n = 30</b>: <b>SE ≈ <span class="num" data-v="se30"></span> min</b> (≈ <span class="num" data-v="se30s"></span> s).</p>
+      <p>With <b>n = 30</b>: <span class="c-se">SE ≈ <span class="num" data-v="se30"></span> min</span> (≈ <span class="num" data-v="se30s"></span> s).</p>
     </div></section>
 
     <section class="step"><div class="step-card">
-      <p>With <b>n = 100</b>: <b>SE ≈ <span class="num" data-v="se100"></span> min</b> (≈ <span class="num" data-v="se100s"></span> s).</p>
-      <p><b>Bigger samples give more reliable means.</b> But because of the square root, timing <b>4× as many customers only halves the SE</b>.</p>
+      <p>With <b>n = 100</b>: <span class="c-se">SE ≈ <span class="num" data-v="se100"></span> min</span> (≈ <span class="num" data-v="se100s"></span> s).</p>
+      <p><b>Bigger samples give more reliable means.</b> But because of the square root, timing <b>4× as many customers only halves the <span class="c-se">SE</span></b>.</p>
     </div></section>
 
     <!-- Act 5: back to the real world -->
     <section class="step"><div class="step-card">
-      <p>In real life, the coffee shop has just <b>one</b> sample and <b>one</b> <span class="xbar">x</span>. It can't see this pile.</p>
-      <p>But now we know what it looks like: their <span class="xbar">x</span> is one of these values, usually within about <b>1 SE</b> of the true average, and almost never more than 2–3 SE away.</p>
-      <p>So the standard error tells you how much to <b>trust</b> a single sample mean. A small SE means your one number is probably close to the truth.</p>
+      <p>In real life, the coffee shop has just <b>one</b> sample and <b>one</b> <span class="c-xbar"><span class="xbar">x</span></span>. It can't see this pile.</p>
+      <p>But now we know what it looks like: their <span class="c-xbar"><span class="xbar">x</span></span> is one of these values, usually within about <span class="c-se">1 SE</span> of the <span class="c-mu">true average</span>, and almost never more than <span class="c-se">2–3 SE</span> away.</p>
+      <p>So the <span class="c-se">standard error</span> tells you how much to <b>trust</b> a single sample mean. A small SE means your one number is probably close to the truth.</p>
     </div></section>
 
     <section class="step"><div class="step-card">
-      <p><b>Your turn.</b> Change the number of samples and n under the sample cards, and watch the standard error change.</p>
-      <p>Hover a card to follow its mean, or sort the cards by <span class="xbar">x</span>.</p>
+      <p><b>Your turn.</b> Change the number of samples and n under the sample cards, and watch the <span class="c-se">standard error</span> change.</p>
+      <p>Hover a card to follow its mean, or sort the cards by <span class="c-xbar"><span class="xbar">x</span></span>.</p>
     </div></section>
 
     <div class="story-end"></div>
