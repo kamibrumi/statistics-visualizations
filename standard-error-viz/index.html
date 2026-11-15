@@ -15,6 +15,7 @@
     --mean: #e11d48;
     --sd: #f59e0b;
     --xbar: #0d9488;
+    --xbar-hover: #115e59;
     --formula: #0284c7;
     --sigma: #c026d3;
     --n: #65a30d;
@@ -26,7 +27,7 @@
     :root:not([data-theme="light"]) {
       --bg: #0c0a09; --ink: #f5f5f4; --muted: #a8a29e; --grid: #292524;
       --bar: #818cf8; --bar-hover: #a5b4fc; --mean: #fb7185; --sd: #fbbf24;
-      --xbar: #2dd4bf; --formula: #38bdf8; --sigma: #e879f9; --n: #a3e635; --card: #1c1917;
+      --xbar: #2dd4bf; --xbar-hover: #99f6e4; --formula: #38bdf8; --sigma: #e879f9; --n: #a3e635; --card: #1c1917;
       --t-mean: #fb7185; --t-sd: #fbbf24; --t-xbar: #2dd4bf; --t-formula: #38bdf8; --t-sigma: #e879f9; --t-n: #a3e635; --t-k: #a5b4fc;
     }
   }
@@ -98,6 +99,9 @@
   /* ---------- Main chart ---------- */
   .bar { fill: var(--bar); transition: fill .15s, opacity .3s; }
   .bar:hover, .bar.hl { fill: var(--bar-hover); }
+  /* The main histogram is a pile of sample means, so its bars use the x̄ teal */
+  #chart .bar { fill: var(--xbar); }
+  #chart .bar:hover, #chart .bar.hl { fill: var(--xbar-hover); }
   .bar.dim { opacity: .3; }
   .dot { fill: var(--bar); }
   .axis line { stroke: var(--muted); }
